@@ -1,0 +1,9 @@
+---
+mountpoint: "/go/src/github.com/tinyci/ci-runners"
+runs:
+  checks:
+    command: [ "bash", "checks.sh" ]
+    image: "golang:1.11.5"
+  staticcheck:
+    command: [ "make", "staticcheck" ]
+    image: "golang:1.11.5"

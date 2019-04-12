@@ -1,0 +1,6 @@
+---
+hostname: "test"
+queue: "default"
+clients:
+  queuesvc: "http://localhost:6001"
+  logsvc: "http://localhost:6002"
