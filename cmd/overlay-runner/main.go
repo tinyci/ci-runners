@@ -52,6 +52,30 @@ leverages an overlayfs backend and git cache to make clones fast.
 	}
 }
 
+func handleCancel(r *runner.Run, cancel context.CancelFunc, cancelSig, runnerSig chan os.Signal) {
+	<-cancelSig
+	cancel()
+retry:
+	canceled, err := r.Config.Clients.Queue.GetCancel(r.QueueItem.Run.ID)
+	if err != nil {
+		fmt.Printf("Could not poll queuesvc; retrying in a second: %v\n", err)
+		time.Sleep(time.Second)
+		goto retry
+	}
+
+	if !canceled {
+		if err := r.Config.Clients.Queue.SetCancel(r.QueueItem.Run.ID); err != nil {
+			fmt.Printf("Cannot cancel current job, retrying in 1s: %v\n", err)
+			time.Sleep(time.Second)
+			goto retry
+		}
+	}
+
+	fmt.Println("Signal received; will wait 10 seconds for cleanup to occur")
+	time.Sleep(10 * time.Second)
+	close(runnerSig)
+}
+
 func loop(ctx *cli.Context) error {
 	// we reload the clients on each run
 	c, err := config.Load(ctx.GlobalString("config"))
@@ -113,29 +137,7 @@ func loop(ctx *cli.Context) error {
 		signal.Stop(runnerSig)
 
 		signal.Notify(cancelSig, unix.SIGINT, unix.SIGTERM)
-		go func() {
-			<-cancelSig
-			cancel()
-		retry:
-			canceled, err := r.Config.Clients.Queue.GetCancel(r.QueueItem.Run.ID)
-			if err != nil {
-				fmt.Printf("Could not poll queuesvc; retrying in a second: %v\n", err)
-				time.Sleep(time.Second)
-				goto retry
-			}
-
-			if !canceled {
-				if err := r.Config.Clients.Queue.SetCancel(r.QueueItem.Run.ID); err != nil {
-					fmt.Printf("Cannot cancel current job, retrying in 1s: %v\n", err)
-					time.Sleep(time.Second)
-					goto retry
-				}
-			}
-
-			fmt.Println("Signal received; will wait 10 seconds for cleanup to occur")
-			time.Sleep(10 * time.Second)
-			close(runnerSig)
-		}()
+		go handleCancel(r, cancel, cancelSig, runnerSig)
 
 		if err := r.RunDocker(); err != nil {
 			c.Clients.Log.WithFields(fields).Errorf("Run concluded with error: %v", err)
