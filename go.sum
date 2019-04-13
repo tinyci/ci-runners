@@ -163,6 +163,8 @@ github.com/tinyci/ci-agents v0.0.0-20190327125807-b32322ad506c h1:c0WJpJ/LuAu6bE
 github.com/tinyci/ci-agents v0.0.0-20190327125807-b32322ad506c/go.mod h1:WRmtzcx22AK6lHuicF4LBVU9WpwbRrvH5IKqQBZ/8oc=
 github.com/tinyci/ci-agents v0.0.0-20190412094846-f42375eed251 h1:EvooRhzmErOjfOWfJHr4T+TRzoLCE2uDoO6tWOmBEQY=
 github.com/tinyci/ci-agents v0.0.0-20190412094846-f42375eed251/go.mod h1:v2OV5yEJpSploh4XsbsMSXEWbaVk6GM5wSoEgMBPMmE=
+github.com/tinyci/ci-agents v0.0.0-20190413110745-606db2e6d952 h1:2YA8nhz9SJ/Ck2ih4YZQkcIE1Mq0P+HjBdw56mjPafg=
+github.com/tinyci/ci-agents v0.0.0-20190413110745-606db2e6d952/go.mod h1:v2OV5yEJpSploh4XsbsMSXEWbaVk6GM5wSoEgMBPMmE=
 github.com/ugorji/go/codec v0.0.0-20181209151446-772ced7fd4c2 h1:EICbibRW4JNKMcY+LsWmuwob+CRS1BmdRdjphAm9mH4=
 github.com/ugorji/go/codec v0.0.0-20181209151446-772ced7fd4c2/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/urfave/cli v1.20.0 h1:fDqGv3UG/4jbVl/QkFwEdddtEDjh/5Ov6X+0B/3bPaw=
