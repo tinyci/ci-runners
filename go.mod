@@ -16,7 +16,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/remyoudompheng/go-misc v0.0.0-20190302072532-28e3c191348b // indirect
 	github.com/securego/gosec v0.0.0-20190320213014-eaba99df3732 // indirect
-	github.com/tinyci/ci-agents v0.0.0-20190412094846-f42375eed251
+	github.com/tinyci/ci-agents v0.0.0-20190413110745-606db2e6d952
 	github.com/urfave/cli v1.20.0
 	golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c // indirect
 	golang.org/x/lint v0.0.0-20190313153728-d0100b6bd8b3 // indirect
