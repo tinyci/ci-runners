@@ -1,5 +1,7 @@
 ---
 mountpoint: "/go/src/github.com/tinyci/ci-runners"
+env:
+  - GO111MODULE=on
 runs:
   checks:
     command: [ "bash", "checks.sh" ]
