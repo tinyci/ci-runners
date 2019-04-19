@@ -83,6 +83,10 @@ func loop(ctx *cli.Context) error {
 		errOut(err)
 	}
 
+	if err := c.Runner.Validate(); err != nil {
+		errOut(err)
+	}
+
 	if c.Hostname == "" {
 		c.Hostname = hostname
 	}

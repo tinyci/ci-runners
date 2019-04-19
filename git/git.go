@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/kr/pty"
+	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-runners/runner/config"
 )
 
@@ -139,12 +140,16 @@ func (rm *RepoManager) reset() error {
 
 // CloneOrFetch either clones a new repository, or fetches from an existing origin.
 func (rm *RepoManager) CloneOrFetch() error {
+	wf := rm.Config.Clients.Log.WithFields(log.FieldMap{"repo_name": rm.RepoName})
+
 	fi, err := os.Stat(rm.RepoPath)
 	if err != nil {
+		wf.Infof("New repository %v; cloning fresh", rm.RepoName)
 		return rm.clone()
 	}
 
 	if !fi.IsDir() {
+		wf.Errorf("Repository path %v is a file; removing and re-cloning", rm.RepoName)
 		if err := os.Remove(rm.RepoPath); err != nil {
 			return err
 		}
@@ -152,18 +157,26 @@ func (rm *RepoManager) CloneOrFetch() error {
 	}
 
 	if err := rm.reset(); err != nil {
+		wf.Errorf("resetting repository: %v", err)
 		return err
 	}
 
 	if err := rm.Checkout("master"); err != nil {
+		wf.Errorf("checking out master: %v", err)
 		return err
 	}
 
 	if err := rm.fetch("origin", false); err != nil {
+		wf.Errorf("fetching origin: %v", err)
 		return err
 	}
 
-	return rm.Rebase("origin/master")
+	if err := rm.Rebase("origin/master"); err != nil {
+		wf.Errorf("rebasing: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 // AddOrFetchFork retrieves the fork's contents, or adds the fork as a remote, and then does that.
