@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/tinyci/ci-agents/model"
-	"github.com/tinyci/ci-runners/runner/config"
+	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
 )
 
 // Run is the encapsulation of a CI run.

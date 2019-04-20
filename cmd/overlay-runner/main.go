@@ -9,8 +9,8 @@ import (
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/errors"
-	"github.com/tinyci/ci-runners/runner"
-	"github.com/tinyci/ci-runners/runner/config"
+	runner "github.com/tinyci/ci-runners/runners/overlay-runner"
+	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
 	"github.com/tinyci/ci-runners/utils"
 	"github.com/urfave/cli"
 	"golang.org/x/sys/unix"

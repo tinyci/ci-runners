@@ -12,7 +12,7 @@ import (
 
 	"github.com/kr/pty"
 	"github.com/tinyci/ci-agents/clients/log"
-	"github.com/tinyci/ci-runners/runner/config"
+	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
 )
 
 const (
