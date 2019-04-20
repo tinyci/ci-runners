@@ -11,6 +11,7 @@ import (
 	"github.com/tinyci/ci-agents/errors"
 	"github.com/tinyci/ci-runners/runner"
 	"github.com/tinyci/ci-runners/runner/config"
+	"github.com/tinyci/ci-runners/utils"
 	"github.com/urfave/cli"
 	"golang.org/x/sys/unix"
 )
@@ -23,11 +24,6 @@ func init() {
 	if err != nil {
 		panic(errors.New(err).Wrap("could not get hostname"))
 	}
-}
-
-func errOut(err interface{}) {
-	fmt.Fprintf(os.Stderr, "Fatal Error during runner execution: %v\n", err)
-	os.Exit(1)
 }
 
 func main() {
@@ -48,7 +44,7 @@ leverages an overlayfs backend and git cache to make clones fast.
 	app.Action = loop
 
 	if err := app.Run(os.Args); err != nil {
-		errOut(err)
+		utils.ErrOut(err)
 	}
 }
 
@@ -80,11 +76,11 @@ func loop(ctx *cli.Context) error {
 	// we reload the clients on each run
 	c, err := config.Load(ctx.GlobalString("config"))
 	if err != nil {
-		errOut(err)
+		return err
 	}
 
 	if err := c.Runner.Validate(); err != nil {
-		errOut(err)
+		return err
 	}
 
 	if c.Hostname == "" {
