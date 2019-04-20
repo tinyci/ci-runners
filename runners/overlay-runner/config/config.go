@@ -1,20 +1,14 @@
 package config
 
 import (
-	"errors"
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/tinyci/ci-agents/clients/asset"
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
 	"github.com/tinyci/ci-agents/config"
-)
-
-const (
-	defaultLoginScriptPath = "/tmp/tinyci-github-login.sh"
-	defaultBaseRepoPath    = "/tmp/git"
+	"github.com/tinyci/ci-runners/git"
 )
 
 // Config is the on-disk runner configuration
@@ -22,36 +16,9 @@ type Config struct {
 	Hostname     string       `yaml:"hostname"`
 	QueueName    string       `yaml:"queue"`
 	ClientConfig ClientConfig `yaml:"clients"`
-	Runner       RunnerConfig `yaml:"runner"`
+	Runner       *git.Config  `yaml:"git"`
 
 	Clients *Clients `yaml:"-"`
-}
-
-// RunnerConfig manages various one-off tidbits about the runner's paths and other data.
-type RunnerConfig struct {
-	LoginScriptPath string `yaml:"login_script_path"`
-	BaseRepoPath    string `yaml:"base_repo_path"`
-}
-
-// Validate corrects or errors out when the configuration doesn't match expectations.
-func (rc *RunnerConfig) Validate() error {
-	if rc.LoginScriptPath == "" {
-		rc.LoginScriptPath = defaultLoginScriptPath
-	}
-
-	if !filepath.IsAbs(rc.LoginScriptPath) {
-		return errors.New("login_script_path must be absolute")
-	}
-
-	if rc.BaseRepoPath == "" {
-		rc.BaseRepoPath = defaultBaseRepoPath
-	}
-
-	if !filepath.IsAbs(rc.BaseRepoPath) {
-		return errors.New("base_repo_path must be absolute")
-	}
-
-	return nil
 }
 
 // ClientConfig is the configuration settings for each service we need a client to.
