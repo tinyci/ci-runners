@@ -254,9 +254,9 @@ func (rm *RepoManager) Checkout(ref string) error {
 func (rm *RepoManager) Rebase(ref string) (retErr error) {
 	defer func() {
 		if retErr != nil {
-			fmt.Println("rebase error; trying to roll back")
+			io.WriteString(rm.Log, "rebase error; trying to roll back")
 			if err := rm.Run("git", "rebase", "--abort"); err != nil {
-				fmt.Println("while attempting to roll back:", err)
+				io.WriteString(rm.Log, fmt.Sprintf("while attempting to roll back: %v", err))
 			}
 		}
 	}()
@@ -268,9 +268,9 @@ func (rm *RepoManager) Rebase(ref string) (retErr error) {
 func (rm *RepoManager) Merge(ref string) (retErr error) {
 	defer func() {
 		if retErr != nil {
-			fmt.Println("merge error; trying to roll back")
+			io.WriteString(rm.Log, "merge error; trying to roll back")
 			if err := rm.Run("git", "merge", "--abort"); err != nil {
-				fmt.Println("while attempting to roll back:", err)
+				io.WriteString(rm.Log, fmt.Sprintf("while attempting to roll back: %v", err))
 			}
 		}
 	}()
