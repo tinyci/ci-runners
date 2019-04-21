@@ -1,7 +1,6 @@
 package git
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/kr/pty"
 	"github.com/tinyci/ci-agents/clients/log"
+	"github.com/tinyci/ci-agents/errors"
 )
 
 const (
@@ -62,11 +62,11 @@ type RepoManager struct {
 	ForkRemote   string
 }
 
-func init() {
+func systemInit() *errors.Error {
 	home := os.Getenv("HOME")
 
 	if home == "" {
-		panic("could not determine home directory; aborting")
+		return errors.New("could not determine home directory; aborting")
 	}
 
 	if _, err := os.Stat(path.Join(home, ".gitconfig")); err != nil {
@@ -74,18 +74,24 @@ func init() {
 
 		// #nosec
 		if err := exec.Command("git", "config", "--global", "--add", "user.name", defaultGitUserName).Run(); err != nil {
-			panic(fmt.Sprintf("While updating git configuration: %v", err))
+			errors.Errorf("While updating git configuration: %v", err)
 		}
 
 		// #nosec
 		if err := exec.Command("git", "config", "--global", "--add", "user.email", defaultGitEmail).Run(); err != nil {
-			panic(fmt.Sprintf("While updating git configuration: %v", err))
+			errors.Errorf("While updating git configuration: %v", err)
 		}
 	}
+
+	return nil
 }
 
 // Init initialies the repomanager for use. Must be called before using other functions.
 func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRepoName string) error {
+	if err := systemInit(); err != nil {
+		return err
+	}
+
 	rm.Config = config
 	rm.Logger = log
 	rm.RepoName = repoName
