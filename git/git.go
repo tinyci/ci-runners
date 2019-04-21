@@ -50,7 +50,7 @@ func (rc *Config) Validate() error {
 
 // RepoManager manages a series of repositories.
 type RepoManager struct {
-	Config       *Config
+	Config       Config
 	Logger       *log.SubLogger
 	Log          io.Writer
 	AccessToken  string
@@ -85,7 +85,7 @@ func init() {
 }
 
 // Init initialies the repomanager for use. Must be called before using other functions.
-func (rm *RepoManager) Init(config *Config, log *log.SubLogger, repoName, forkRepoName string) error {
+func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRepoName string) error {
 	rm.Config = config
 	rm.Logger = log
 	rm.RepoName = repoName
