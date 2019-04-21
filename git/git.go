@@ -12,17 +12,46 @@ import (
 
 	"github.com/kr/pty"
 	"github.com/tinyci/ci-agents/clients/log"
-	"github.com/tinyci/ci-runners/runner/config"
 )
 
 const (
-	defaultGitUserName = "tinyCI runner"
-	defaultGitEmail    = "no-reply@example.org"
+	defaultLoginScriptPath = "/tmp/tinyci-github-login.sh"
+	defaultBaseRepoPath    = "/tmp/git"
+	defaultGitUserName     = "tinyCI runner"
+	defaultGitEmail        = "no-reply@example.org"
 )
+
+// Config manages various one-off tidbits about the runner's git paths and other data.
+type Config struct {
+	LoginScriptPath string `yaml:"login_script_path"`
+	BaseRepoPath    string `yaml:"base_repo_path"`
+}
+
+// Validate corrects or errors out when the configuration doesn't match expectations.
+func (rc *Config) Validate() error {
+	if rc.LoginScriptPath == "" {
+		rc.LoginScriptPath = defaultLoginScriptPath
+	}
+
+	if !filepath.IsAbs(rc.LoginScriptPath) {
+		return errors.New("login_script_path must be absolute")
+	}
+
+	if rc.BaseRepoPath == "" {
+		rc.BaseRepoPath = defaultBaseRepoPath
+	}
+
+	if !filepath.IsAbs(rc.BaseRepoPath) {
+		return errors.New("base_repo_path must be absolute")
+	}
+
+	return nil
+}
 
 // RepoManager manages a series of repositories.
 type RepoManager struct {
-	Config       *config.Config
+	Config       *Config
+	Logger       *log.SubLogger
 	Log          io.Writer
 	AccessToken  string
 	Env          []string
@@ -56,8 +85,9 @@ func init() {
 }
 
 // Init initialies the repomanager for use. Must be called before using other functions.
-func (rm *RepoManager) Init(config *config.Config, repoName, forkRepoName string) error {
+func (rm *RepoManager) Init(config *Config, log *log.SubLogger, repoName, forkRepoName string) error {
 	rm.Config = config
+	rm.Logger = log
 	rm.RepoName = repoName
 	if err := rm.validateRepoName(rm.RepoName); err != nil {
 		return err
@@ -91,7 +121,7 @@ func (rm *RepoManager) validateRepoName(repoName string) error {
 // credentials functionality. It merely contains `echo <token>` which is enough
 // to get us in.
 func (rm *RepoManager) createLoginScript() error {
-	f, err := os.Create(rm.Config.Runner.LoginScriptPath)
+	f, err := os.Create(rm.Config.LoginScriptPath)
 	if err != nil {
 		return err
 	}
@@ -110,7 +140,7 @@ echo %q
 }
 
 func (rm *RepoManager) removeLoginScript() error {
-	return os.Remove(rm.Config.Runner.LoginScriptPath)
+	return os.Remove(rm.Config.LoginScriptPath)
 }
 
 func (rm *RepoManager) clone() error {
@@ -140,7 +170,7 @@ func (rm *RepoManager) reset() error {
 
 // CloneOrFetch either clones a new repository, or fetches from an existing origin.
 func (rm *RepoManager) CloneOrFetch() error {
-	wf := rm.Config.Clients.Log.WithFields(log.FieldMap{"repo_name": rm.RepoName})
+	wf := rm.Logger.WithFields(log.FieldMap{"repo_name": rm.RepoName})
 
 	fi, err := os.Stat(rm.RepoPath)
 	if err != nil {
@@ -251,7 +281,7 @@ func (rm *RepoManager) Run(command ...string) error {
 
 	cmd := exec.Command(command[0], command[1:]...) // #nosec
 	cmd.Env = append(
-		append(os.Environ(), fmt.Sprintf("GIT_ASKPASS=%s", rm.Config.Runner.LoginScriptPath), "EDITOR=/bin/true"),
+		append(os.Environ(), fmt.Sprintf("GIT_ASKPASS=%s", rm.Config.LoginScriptPath), "EDITOR=/bin/true"),
 		rm.Env...)
 	cmd.Dir = rm.RepoPath
 

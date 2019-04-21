@@ -39,7 +39,7 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 		"repo_name":      r.QueueItem.Run.Task.Parent.Name,
 	})
 
-	if err := rm.Init(r.Config, r.QueueItem.Run.Task.Parent.Name, r.QueueItem.Run.Task.Ref.Repository.Name); err != nil {
+	if err := rm.Init(r.Config.Runner, r.Config.Clients.Log, r.QueueItem.Run.Task.Parent.Name, r.QueueItem.Run.Task.Ref.Repository.Name); err != nil {
 		wf.Errorf("Error initializing repo: %v", err)
 		return nil, err
 	}

@@ -9,8 +9,10 @@ import (
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/errors"
-	"github.com/tinyci/ci-runners/runner"
-	"github.com/tinyci/ci-runners/runner/config"
+	runner "github.com/tinyci/ci-runners/runners/overlay-runner"
+	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
+	sig "github.com/tinyci/ci-runners/signal"
+	"github.com/tinyci/ci-runners/utils"
 	"github.com/urfave/cli"
 	"golang.org/x/sys/unix"
 )
@@ -23,11 +25,6 @@ func init() {
 	if err != nil {
 		panic(errors.New(err).Wrap("could not get hostname"))
 	}
-}
-
-func errOut(err interface{}) {
-	fmt.Fprintf(os.Stderr, "Fatal Error during runner execution: %v\n", err)
-	os.Exit(1)
 }
 
 func main() {
@@ -48,43 +45,19 @@ leverages an overlayfs backend and git cache to make clones fast.
 	app.Action = loop
 
 	if err := app.Run(os.Args); err != nil {
-		errOut(err)
+		utils.ErrOut(err)
 	}
-}
-
-func handleCancel(r *runner.Run, cancel context.CancelFunc, cancelSig, runnerSig chan os.Signal) {
-	<-cancelSig
-	cancel()
-retry:
-	canceled, err := r.Config.Clients.Queue.GetCancel(r.QueueItem.Run.ID)
-	if err != nil {
-		fmt.Printf("Could not poll queuesvc; retrying in a second: %v\n", err)
-		time.Sleep(time.Second)
-		goto retry
-	}
-
-	if !canceled {
-		if err := r.Config.Clients.Queue.SetCancel(r.QueueItem.Run.ID); err != nil {
-			fmt.Printf("Cannot cancel current job, retrying in 1s: %v\n", err)
-			time.Sleep(time.Second)
-			goto retry
-		}
-	}
-
-	fmt.Println("Signal received; will wait 10 seconds for cleanup to occur")
-	time.Sleep(10 * time.Second)
-	close(runnerSig)
 }
 
 func loop(ctx *cli.Context) error {
 	// we reload the clients on each run
 	c, err := config.Load(ctx.GlobalString("config"))
 	if err != nil {
-		errOut(err)
+		return err
 	}
 
 	if err := c.Runner.Validate(); err != nil {
-		errOut(err)
+		return err
 	}
 
 	if c.Hostname == "" {
@@ -140,13 +113,23 @@ func loop(ctx *cli.Context) error {
 		cancelSig := make(chan os.Signal, 2)
 		signal.Stop(runnerSig)
 
+		sigCtx := &sig.Context{
+			CancelFunc:   cancel,
+			QueueClient:  c.Clients.Queue,
+			RunID:        qi.Run.ID,
+			CancelSignal: cancelSig,
+			RunnerSignal: runnerSig,
+			Done:         make(chan struct{}),
+		}
+
 		signal.Notify(cancelSig, unix.SIGINT, unix.SIGTERM)
-		go handleCancel(r, cancel, cancelSig, runnerSig)
+		go sigCtx.HandleCancel()
 
 		if err := r.RunDocker(); err != nil {
 			c.Clients.Log.WithFields(fields).Errorf("Run concluded with error: %v", err)
 		}
 
+		close(sigCtx.Done)
 		signal.Notify(runnerSig, unix.SIGINT, unix.SIGTERM)
 
 		didCancel, err := r.Config.Clients.Queue.GetCancel(r.QueueItem.Run.ID)
