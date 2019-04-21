@@ -1,7 +1,6 @@
 package git
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,41 +11,8 @@ import (
 
 	"github.com/kr/pty"
 	"github.com/tinyci/ci-agents/clients/log"
+	"github.com/tinyci/ci-agents/errors"
 )
-
-const (
-	defaultLoginScriptPath = "/tmp/tinyci-github-login.sh"
-	defaultBaseRepoPath    = "/tmp/git"
-	defaultGitUserName     = "tinyCI runner"
-	defaultGitEmail        = "no-reply@example.org"
-)
-
-// Config manages various one-off tidbits about the runner's git paths and other data.
-type Config struct {
-	LoginScriptPath string `yaml:"login_script_path"`
-	BaseRepoPath    string `yaml:"base_repo_path"`
-}
-
-// Validate corrects or errors out when the configuration doesn't match expectations.
-func (rc *Config) Validate() error {
-	if rc.LoginScriptPath == "" {
-		rc.LoginScriptPath = defaultLoginScriptPath
-	}
-
-	if !filepath.IsAbs(rc.LoginScriptPath) {
-		return errors.New("login_script_path must be absolute")
-	}
-
-	if rc.BaseRepoPath == "" {
-		rc.BaseRepoPath = defaultBaseRepoPath
-	}
-
-	if !filepath.IsAbs(rc.BaseRepoPath) {
-		return errors.New("base_repo_path must be absolute")
-	}
-
-	return nil
-}
 
 // RepoManager manages a series of repositories.
 type RepoManager struct {
@@ -62,11 +28,11 @@ type RepoManager struct {
 	ForkRemote   string
 }
 
-func init() {
+func systemInit() *errors.Error {
 	home := os.Getenv("HOME")
 
 	if home == "" {
-		panic("could not determine home directory; aborting")
+		return errors.New("could not determine home directory; aborting")
 	}
 
 	if _, err := os.Stat(path.Join(home, ".gitconfig")); err != nil {
@@ -74,18 +40,24 @@ func init() {
 
 		// #nosec
 		if err := exec.Command("git", "config", "--global", "--add", "user.name", defaultGitUserName).Run(); err != nil {
-			panic(fmt.Sprintf("While updating git configuration: %v", err))
+			errors.Errorf("While updating git configuration: %v", err)
 		}
 
 		// #nosec
 		if err := exec.Command("git", "config", "--global", "--add", "user.email", defaultGitEmail).Run(); err != nil {
-			panic(fmt.Sprintf("While updating git configuration: %v", err))
+			errors.Errorf("While updating git configuration: %v", err)
 		}
 	}
+
+	return nil
 }
 
 // Init initialies the repomanager for use. Must be called before using other functions.
 func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRepoName string) error {
+	if err := systemInit(); err != nil {
+		return err
+	}
+
 	rm.Config = config
 	rm.Logger = log
 	rm.RepoName = repoName
@@ -248,9 +220,9 @@ func (rm *RepoManager) Checkout(ref string) error {
 func (rm *RepoManager) Rebase(ref string) (retErr error) {
 	defer func() {
 		if retErr != nil {
-			fmt.Println("rebase error; trying to roll back")
+			io.WriteString(rm.Log, "rebase error; trying to roll back")
 			if err := rm.Run("git", "rebase", "--abort"); err != nil {
-				fmt.Println("while attempting to roll back:", err)
+				io.WriteString(rm.Log, fmt.Sprintf("while attempting to roll back: %v", err))
 			}
 		}
 	}()
@@ -262,9 +234,9 @@ func (rm *RepoManager) Rebase(ref string) (retErr error) {
 func (rm *RepoManager) Merge(ref string) (retErr error) {
 	defer func() {
 		if retErr != nil {
-			fmt.Println("merge error; trying to roll back")
+			io.WriteString(rm.Log, "merge error; trying to roll back")
 			if err := rm.Run("git", "merge", "--abort"); err != nil {
-				fmt.Println("while attempting to roll back:", err)
+				io.WriteString(rm.Log, fmt.Sprintf("while attempting to roll back: %v", err))
 			}
 		}
 	}()

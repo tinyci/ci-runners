@@ -5,12 +5,14 @@ import (
 	"io"
 	"time"
 
+	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/model"
 	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
 )
 
 // Run is the encapsulation of a CI run.
 type Run struct {
+	Logger      *log.SubLogger
 	QueueItem   *model.QueueItem
 	Config      *config.Config
 	ContainerID string
@@ -20,12 +22,17 @@ type Run struct {
 }
 
 // NewRun constructs a new *Run.
-func NewRun(context context.Context, cancelFunc context.CancelFunc, qi *model.QueueItem, c *config.Config) *Run {
+func NewRun(context context.Context, cancelFunc context.CancelFunc, qi *model.QueueItem, c *config.Config, logger *log.SubLogger) *Run {
+	if logger == nil {
+		logger = c.Clients.Log
+	}
+
 	return &Run{
 		QueueItem: qi,
 		Config:    c,
 		Context:   context,
 		Cancel:    cancelFunc,
+		Logger:    logger,
 	}
 }
 
@@ -58,7 +65,7 @@ func (r *Run) StartCancelFunc() {
 func (r *Run) StartLogger(rc io.Reader) {
 	go func() {
 		if err := r.Config.Clients.Asset.Write(r.QueueItem.Run.ID, rc); err != nil {
-			r.Config.Clients.Log.Error(err.Wrapf("Writing log for Run ID %d", r.QueueItem.Run.ID))
+			r.Logger.Error(err.Wrapf("Writing log for Run ID %d", r.QueueItem.Run.ID))
 		}
 	}()
 }

@@ -33,13 +33,13 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 		BaseRepoPath: r.Config.Runner.BaseRepoPath,
 	}
 
-	wf := r.Config.Clients.Log.WithFields(log.FieldMap{
+	wf := r.Logger.WithFields(log.FieldMap{
 		"owner":          r.QueueItem.Run.Task.Parent.Owner.Username,
 		"base_repo_path": r.Config.Runner.BaseRepoPath,
 		"repo_name":      r.QueueItem.Run.Task.Parent.Name,
 	})
 
-	if err := rm.Init(r.Config.Runner, r.Config.Clients.Log, r.QueueItem.Run.Task.Parent.Name, r.QueueItem.Run.Task.Ref.Repository.Name); err != nil {
+	if err := rm.Init(r.Config.Runner, wf, r.QueueItem.Run.Task.Parent.Name, r.QueueItem.Run.Task.Ref.Repository.Name); err != nil {
 		wf.Errorf("Error initializing repo: %v", err)
 		return nil, err
 	}
