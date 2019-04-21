@@ -16,7 +16,7 @@ type Config struct {
 	Hostname     string       `yaml:"hostname"`
 	QueueName    string       `yaml:"queue"`
 	ClientConfig ClientConfig `yaml:"clients"`
-	Runner       *git.Config  `yaml:"git"`
+	Runner       git.Config   `yaml:"git"`
 
 	Clients *Clients `yaml:"-"`
 }
