@@ -64,12 +64,13 @@ func loop(ctx *cli.Context) error {
 		c.Hostname = hostname
 	}
 
-	c.Clients.Log.WithFields(log.FieldMap{"hostname": c.Hostname}).Info("Initializing runner")
+	c.Clients.Log = c.Clients.Log.WithFields(log.FieldMap{"hostname": c.Hostname})
+	c.Clients.Log.Info("Initializing runner")
 
 	runnerSig := make(chan os.Signal, 2)
 	go func() {
 		<-runnerSig
-		c.Clients.Log.WithFields(log.FieldMap{"hostname": c.Hostname}).Info("Shutting down runner")
+		c.Clients.Log.Info("Shutting down runner")
 		os.Exit(0)
 	}()
 	signal.Notify(runnerSig, unix.SIGINT, unix.SIGTERM)
@@ -93,7 +94,9 @@ func loop(ctx *cli.Context) error {
 			"sha":        qi.Run.Task.Ref.SHA,
 		}
 
-		c.Clients.Log.WithFields(fields).Info("Received run data; commencing with test")
+		runLogger := c.Clients.Log.WithFields(fields)
+
+		runLogger.Info("Received run data; commencing with test")
 
 		since := time.Now()
 
@@ -108,7 +111,7 @@ func loop(ctx *cli.Context) error {
 			ctx, cancel = context.WithCancel(context.Background())
 		}
 
-		r := runner.NewRun(ctx, cancel, qi, c)
+		r := runner.NewRun(ctx, cancel, qi, c, runLogger)
 
 		cancelSig := make(chan os.Signal, 2)
 		signal.Stop(runnerSig)
@@ -126,7 +129,7 @@ func loop(ctx *cli.Context) error {
 		go sigCtx.HandleCancel()
 
 		if err := r.RunDocker(); err != nil {
-			c.Clients.Log.WithFields(fields).Errorf("Run concluded with error: %v", err)
+			runLogger.Errorf("Run concluded with error: %v", err)
 		}
 
 		close(sigCtx.Done)
@@ -134,13 +137,13 @@ func loop(ctx *cli.Context) error {
 
 		didCancel, err := r.Config.Clients.Queue.GetCancel(r.QueueItem.Run.ID)
 		if err != nil {
-			c.Clients.Log.WithFields(fields).Errorf("Cannot retrieve cancel state of current job, retrying in 1s: %v\n", err)
+			runLogger.Errorf("Cannot retrieve cancel state of current job, retrying in 1s: %v\n", err)
 			time.Sleep(time.Second)
 		}
 
 		if ctx.Err() == context.DeadlineExceeded && !didCancel {
 			if err := r.Config.Clients.Queue.SetCancel(r.QueueItem.Run.ID); err != nil {
-				c.Clients.Log.WithFields(fields).Errorf("Cannot cancel current job, retrying in 1s: %+v\n", err)
+				runLogger.Errorf("Cannot cancel current job, retrying in 1s: %+v\n", err)
 				time.Sleep(time.Second)
 			}
 
@@ -150,12 +153,12 @@ func loop(ctx *cli.Context) error {
 		if !didCancel {
 		normalRetry:
 			if err := c.Clients.Queue.SetStatus(qi.Run.ID, r.Status); err != nil {
-				c.Clients.Log.WithFields(fields).Errorf("Status report resulted in error: %v", err)
+				runLogger.Errorf("Status report resulted in error: %v", err)
 				time.Sleep(time.Second)
 				goto normalRetry
 			}
 		}
 
-		c.Clients.Log.WithFields(fields).Infof("Run finished in %v", time.Since(since))
+		runLogger.Infof("Run finished in %v", time.Since(since))
 	}
 }

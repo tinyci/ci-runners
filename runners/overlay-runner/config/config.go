@@ -52,7 +52,7 @@ func Load(filename string) (*Config, error) {
 		log.ConfigureRemote(c.ClientConfig.Log, cert)
 	}
 
-	c.Clients.Log = log.NewWithData(path.Base(os.Args[0]), log.FieldMap{"queue": c.QueueName})
+	c.Clients.Log = log.NewWithData(path.Base(os.Args[0]), log.FieldMap{"queue": c.QueueName, "hostname": c.Hostname})
 
 	c.Clients.Queue, err = queue.New(c.ClientConfig.Queue, cert)
 	if err != nil {
