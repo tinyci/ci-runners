@@ -1,3 +1,27 @@
+// Package git implements functionality to work with git and GitHub.
+//
+// To leverage it, create a RepoManager and call Init() on it with the
+// appropriate arguments. Then, you can manage git repositories as a collection
+// of items coming from GitHub.
+//
+// The filesystem is organized like so:
+//
+//    * rootpath
+//      * parentOrg1
+//        * repo1
+//        * repo1
+//      * parentOrg2
+//        * repo1
+//
+// No original clones of the forks are kept. These are stored as remotes in
+// each parent repository. This allows us to keep the filesystem footprint
+// simple as well as keeping a cache for each fork in a reliable way.
+//
+// Clones are done over HTTPS with a login script that is used in conjunction
+// with the token provided from the queuesvc to auth against github. SSH
+// cloning has a lot of intermediate caching challenges that we were trying to
+// avoid for future works; this is aside from how hard it can be to orchestrate
+// automated SSH without leaking secrets.
 package git
 
 import (
@@ -14,18 +38,33 @@ import (
 	"github.com/tinyci/ci-agents/errors"
 )
 
-// RepoManager manages a series of repositories.
+// RepoManager manages a series of repositories. Call Init() before using it.
 type RepoManager struct {
-	Config       Config
-	Logger       *log.SubLogger
-	Log          io.Writer
-	AccessToken  string
-	Env          []string
-	BaseRepoPath string
-	RepoPath     string
-	RepoName     string
+	// Config addresses the configuration of certain git-centric items such as
+	// the root repo path
+	Config Config
+	// Logger is the logsvc client
+	Logger *log.SubLogger
+	// Log is an IO stream that will be sent output from git.
+	Log io.Writer
+	// AccessToken is the github access token used to auth over https.
+	AccessToken string
+	// Env is the set of environ(7)-style environment variable listings. They
+	// will be appended to each git call.
+	Env []string
+
+	//
+	// The following fields are populated at init time and should be left blank
+	// or they will be overwritten.
+	//
+	// RepoPath is the path to the repository, computed from name and base path.
+	RepoPath string
+	// RepoName is the parent repo in owner/repo format.
+	RepoName string
+	// ForkRepoName is the name of the fork repo in owner/repo format
 	ForkRepoName string
-	ForkRemote   string
+	// ForkRemote is the computed owner name from the fork repo definition.
+	ForkRemote string
 }
 
 func systemInit() *errors.Error {
@@ -52,7 +91,7 @@ func systemInit() *errors.Error {
 	return nil
 }
 
-// Init initialies the repomanager for use. Must be called before using other functions.
+// Init initializes the repomanager for use. Must be called before using other functions.
 func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRepoName string) error {
 	if err := systemInit(); err != nil {
 		return err
@@ -73,7 +112,7 @@ func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRep
 	parts := strings.SplitN(rm.ForkRepoName, "/", 2)
 	rm.ForkRemote = parts[0]
 
-	rm.RepoPath = filepath.Join(rm.BaseRepoPath, rm.RepoName)
+	rm.RepoPath = filepath.Join(config.BaseRepoPath, rm.RepoName)
 	return nil
 }
 

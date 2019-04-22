@@ -28,9 +28,9 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 	}
 
 	rm := &git.RepoManager{
-		Log:          w,
-		AccessToken:  tok.Token,
-		BaseRepoPath: r.Config.Runner.BaseRepoPath,
+		Config:      r.Config.Runner,
+		Log:         w,
+		AccessToken: tok.Token,
 	}
 
 	wf := r.Logger.WithFields(log.FieldMap{

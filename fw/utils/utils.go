@@ -1,3 +1,4 @@
+// Package utils contains useful one-off tools for implementing runners.
 package utils
 
 import (

@@ -13,14 +13,18 @@ const (
 	defaultGitEmail        = "no-reply@example.org"
 )
 
-// Config manages various one-off tidbits about the runner's git paths and other data.
+// Config manages various one-off tidbits about the runner's git paths and
+// other data. You must manually merge this with your runner's configuration if
+// you wish to use the runner framework, see fw/config documentation for more
+// information.
 type Config struct {
 	LoginScriptPath string `yaml:"login_script_path"`
 	BaseRepoPath    string `yaml:"base_repo_path"`
 }
 
-// Validate corrects or errors out when the configuration doesn't match expectations.
-func (rc *Config) Validate() error {
+// Validate corrects or errors out when the configuration doesn't match
+// expectations.
+func (rc *Config) Validate() *errors.Error {
 	if rc.LoginScriptPath == "" {
 		rc.LoginScriptPath = defaultLoginScriptPath
 	}
