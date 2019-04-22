@@ -8,7 +8,7 @@ import (
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
 	"github.com/tinyci/ci-agents/config"
-	"github.com/tinyci/ci-runners/git"
+	"github.com/tinyci/ci-runners/fw/git"
 )
 
 // Config is the on-disk runner configuration

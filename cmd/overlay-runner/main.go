@@ -9,10 +9,10 @@ import (
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/errors"
+	sig "github.com/tinyci/ci-runners/fw/signal"
+	"github.com/tinyci/ci-runners/fw/utils"
 	runner "github.com/tinyci/ci-runners/runners/overlay-runner"
 	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
-	sig "github.com/tinyci/ci-runners/signal"
-	"github.com/tinyci/ci-runners/utils"
 	"github.com/urfave/cli"
 	"golang.org/x/sys/unix"
 )

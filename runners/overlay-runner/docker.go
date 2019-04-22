@@ -14,7 +14,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/fatih/color"
-	"github.com/tinyci/ci-runners/overlay"
+	"github.com/tinyci/ci-runners/fw/overlay"
 )
 
 func processLine(m map[string]interface{}, idMap map[string][]float64) bool {

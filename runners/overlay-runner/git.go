@@ -6,7 +6,7 @@ import (
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/types"
-	"github.com/tinyci/ci-runners/git"
+	"github.com/tinyci/ci-runners/fw/git"
 )
 
 func jsonIO(from, to interface{}) error {
