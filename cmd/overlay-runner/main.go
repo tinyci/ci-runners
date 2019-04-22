@@ -9,6 +9,7 @@ import (
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/errors"
+	fwConfig "github.com/tinyci/ci-runners/fw/config"
 	sig "github.com/tinyci/ci-runners/fw/signal"
 	"github.com/tinyci/ci-runners/fw/utils"
 	runner "github.com/tinyci/ci-runners/runners/overlay-runner"
@@ -51,7 +52,8 @@ leverages an overlayfs backend and git cache to make clones fast.
 
 func loop(ctx *cli.Context) error {
 	// we reload the clients on each run
-	c, err := config.Load(ctx.GlobalString("config"))
+	c := &config.Config{C: &fwConfig.Config{Clients: &fwConfig.Clients{}}}
+	err := fwConfig.Load(ctx.GlobalString("config"), c)
 	if err != nil {
 		return err
 	}
@@ -60,33 +62,33 @@ func loop(ctx *cli.Context) error {
 		return err
 	}
 
-	if c.Hostname == "" {
-		c.Hostname = hostname
+	if c.C.Hostname == "" {
+		c.C.Hostname = hostname
 	}
 
-	c.Clients.Log = c.Clients.Log.WithFields(log.FieldMap{"hostname": c.Hostname})
-	c.Clients.Log.Info("Initializing runner")
+	c.C.Clients.Log = c.C.Clients.Log.WithFields(log.FieldMap{"hostname": c.C.Hostname})
+	c.C.Clients.Log.Info("Initializing runner")
 
 	runnerSig := make(chan os.Signal, 2)
 	go func() {
 		<-runnerSig
-		c.Clients.Log.Info("Shutting down runner")
+		c.C.Clients.Log.Info("Shutting down runner")
 		os.Exit(0)
 	}()
 	signal.Notify(runnerSig, unix.SIGINT, unix.SIGTERM)
 
 	for {
-		qi, err := c.Clients.Queue.NextQueueItem(c.QueueName, c.Hostname)
+		qi, err := c.C.Clients.Queue.NextQueueItem(c.C.QueueName, c.C.Hostname)
 		if err != nil {
 			if !err.Contains(errors.ErrNotFound) {
-				c.Clients.Log.Errorf("Error reading from queue: %v", err)
+				c.C.Clients.Log.Errorf("Error reading from queue: %v", err)
 			}
 			time.Sleep(time.Second)
 			continue
 		}
 
 		fields := log.FieldMap{
-			"hostname":   c.Hostname,
+			"hostname":   c.C.Hostname,
 			"run_id":     fmt.Sprintf("%v", qi.Run.ID),
 			"task_id":    fmt.Sprintf("%v", qi.Run.Task.ID),
 			"parent":     qi.Run.Task.Parent.Name,
@@ -94,7 +96,7 @@ func loop(ctx *cli.Context) error {
 			"sha":        qi.Run.Task.Ref.SHA,
 		}
 
-		runLogger := c.Clients.Log.WithFields(fields)
+		runLogger := c.C.Clients.Log.WithFields(fields)
 
 		runLogger.Info("Received run data; commencing with test")
 
@@ -118,7 +120,7 @@ func loop(ctx *cli.Context) error {
 
 		sigCtx := &sig.Context{
 			CancelFunc:   cancel,
-			QueueClient:  c.Clients.Queue,
+			QueueClient:  c.C.Clients.Queue,
 			RunID:        qi.Run.ID,
 			CancelSignal: cancelSig,
 			RunnerSignal: runnerSig,
@@ -135,14 +137,14 @@ func loop(ctx *cli.Context) error {
 		close(sigCtx.Done)
 		signal.Notify(runnerSig, unix.SIGINT, unix.SIGTERM)
 
-		didCancel, err := r.Config.Clients.Queue.GetCancel(r.QueueItem.Run.ID)
+		didCancel, err := r.Config.C.Clients.Queue.GetCancel(r.QueueItem.Run.ID)
 		if err != nil {
 			runLogger.Errorf("Cannot retrieve cancel state of current job, retrying in 1s: %v\n", err)
 			time.Sleep(time.Second)
 		}
 
 		if ctx.Err() == context.DeadlineExceeded && !didCancel {
-			if err := r.Config.Clients.Queue.SetCancel(r.QueueItem.Run.ID); err != nil {
+			if err := r.Config.C.Clients.Queue.SetCancel(r.QueueItem.Run.ID); err != nil {
 				runLogger.Errorf("Cannot cancel current job, retrying in 1s: %+v\n", err)
 				time.Sleep(time.Second)
 			}
@@ -152,7 +154,7 @@ func loop(ctx *cli.Context) error {
 
 		if !didCancel {
 		normalRetry:
-			if err := c.Clients.Queue.SetStatus(qi.Run.ID, r.Status); err != nil {
+			if err := c.C.Clients.Queue.SetStatus(qi.Run.ID, r.Status); err != nil {
 				runLogger.Errorf("Status report resulted in error: %v", err)
 				time.Sleep(time.Second)
 				goto normalRetry

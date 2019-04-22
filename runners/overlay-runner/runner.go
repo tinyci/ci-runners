@@ -24,7 +24,7 @@ type Run struct {
 // NewRun constructs a new *Run.
 func NewRun(context context.Context, cancelFunc context.CancelFunc, qi *model.QueueItem, c *config.Config, logger *log.SubLogger) *Run {
 	if logger == nil {
-		logger = c.Clients.Log
+		logger = c.C.Clients.Log
 	}
 
 	return &Run{
@@ -48,7 +48,7 @@ func (r *Run) StartCancelFunc() {
 			default:
 			}
 
-			state, err := r.Config.Clients.Queue.GetCancel(r.QueueItem.Run.ID)
+			state, err := r.Config.C.Clients.Queue.GetCancel(r.QueueItem.Run.ID)
 			if err != nil || !state {
 				time.Sleep(time.Second)
 				continue
@@ -64,7 +64,7 @@ func (r *Run) StartCancelFunc() {
 // the log.
 func (r *Run) StartLogger(rc io.Reader) {
 	go func() {
-		if err := r.Config.Clients.Asset.Write(r.QueueItem.Run.ID, rc); err != nil {
+		if err := r.Config.C.Clients.Asset.Write(r.QueueItem.Run.ID, rc); err != nil {
 			r.Logger.Error(err.Wrapf("Writing log for Run ID %d", r.QueueItem.Run.ID))
 		}
 	}()
