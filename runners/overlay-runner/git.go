@@ -6,7 +6,7 @@ import (
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/types"
-	"github.com/tinyci/ci-runners/git"
+	"github.com/tinyci/ci-runners/fw/git"
 )
 
 func jsonIO(from, to interface{}) error {
@@ -28,9 +28,9 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 	}
 
 	rm := &git.RepoManager{
-		Log:          w,
-		AccessToken:  tok.Token,
-		BaseRepoPath: r.Config.Runner.BaseRepoPath,
+		Config:      r.Config.Runner,
+		Log:         w,
+		AccessToken: tok.Token,
 	}
 
 	wf := r.Logger.WithFields(log.FieldMap{

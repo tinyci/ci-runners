@@ -1,3 +1,51 @@
+// Package overlay implements union filesystems via overlayfs for the purposes
+// of keep your source tree clean.
+//
+// To use, simply create three paths -- ioutil.TempDir()s work great -- and
+// have the path to your source code. Assign then to the various properties in
+// the Mount parameter, assign the path to your source code to the Lower property.
+//
+// Then, call the methods:
+//		func main() {
+//			m := &Mount{}
+//			m.Lower = os.Args[0]
+//
+//			var err error
+//			m.Upper, err = ioutil.TempDir("", "")
+//			if err != nil {
+//				panic(err)
+//			}
+//
+//			m.Target, err = ioutil.TempDir("", "")
+//			if err != nil {
+//				panic(err)
+//			}
+//
+//			m.Work, err = ioutil.TempDir("", "")
+//			if err != nil {
+//				panic(err)
+//			}
+//
+//			if err := m.Mount(); err != nil {
+//				panic(err)
+//			}
+//
+//			fmt.Println(m.Target)
+//			fmt.Println("do some damage, and press enter to unmount")
+//			os.Stdin.Read([]byte{})
+//
+//			if err := m.Unmount(); err != nil {
+//				panic(err)
+//			}
+//
+//			if err := m.Cleanup(); err != nil {
+//				panic(err)
+//			}
+//		}
+//
+//
+// Your program must have the *CAP_SYS_ADMIN* linux capability (see
+// capabilities(7)) or be root to use this library without permissions issues.
 package overlay
 
 import (

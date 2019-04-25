@@ -21,6 +21,12 @@ container can write all it wants to the git repository's directory, but the
 overlayfs will capture that. At the end of the run, the overlayfs is removed
 from disk, returning the repository to a pristine state.
 
+## Framework
+
+We have a runner framework to make it easy to build runners; please see our
+[GoDoc](https://godoc.org/github.com/tinyci/ci-runners/fw) for more information
+on how to use it!
+
 ## Authors
 
 - [Erik Hollensbe](https://github.com/erikh) -- Overlay Runner

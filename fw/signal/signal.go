@@ -1,3 +1,4 @@
+// Package signal manages functionality surrounding signals from linux.
 package signal
 
 import (
@@ -35,7 +36,7 @@ type Context struct {
 // To use this function, populate the *Context as described; then call this in a
 // goroutine. Once triggered, it is assuming the daemon is shutting down and
 // will trigger all cancellation behavior in the context.
-func (ctx *Context) HandleCancel() {
+func (ctx *Context) HandleCancel(waitTime time.Duration) {
 	select {
 	case <-ctx.Done:
 		return
@@ -57,8 +58,8 @@ func (ctx *Context) HandleCancel() {
 			}
 		}
 
-		fmt.Println("Signal received; will wait 10 seconds for cleanup to occur")
-		time.Sleep(10 * time.Second)
+		fmt.Printf("Signal received; will wait %v for cleanup to occur\n", waitTime)
+		time.Sleep(waitTime)
 		close(ctx.RunnerSignal)
 	}
 }

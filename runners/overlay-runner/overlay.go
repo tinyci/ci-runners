@@ -3,8 +3,8 @@ package runner
 import (
 	"io/ioutil"
 
-	"github.com/tinyci/ci-runners/git"
-	"github.com/tinyci/ci-runners/overlay"
+	"github.com/tinyci/ci-runners/fw/git"
+	"github.com/tinyci/ci-runners/fw/overlay"
 )
 
 // MountRepo mounts the repo through overlayfs so we can quickly clean up the
