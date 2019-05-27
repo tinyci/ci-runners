@@ -168,11 +168,7 @@ func (rm *RepoManager) fetch(remote string, pull bool) error {
 		verb = "pull"
 	}
 
-	if err := rm.Run("git", verb, remote); err != nil {
-		return err
-	}
-
-	return rm.Run("git", "submodule", "update", "--init", "--recursive")
+	return rm.Run("git", verb, remote)
 }
 
 func (rm *RepoManager) reset() error {
@@ -221,7 +217,7 @@ func (rm *RepoManager) CloneOrFetch() error {
 		return err
 	}
 
-	return nil
+	return rm.Run("git", "submodule", "update", "--init", "--recursive")
 }
 
 // AddOrFetchFork retrieves the fork's contents, or adds the fork as a remote, and then does that.
