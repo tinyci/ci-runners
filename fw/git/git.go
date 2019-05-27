@@ -168,7 +168,11 @@ func (rm *RepoManager) fetch(remote string, pull bool) error {
 		verb = "pull"
 	}
 
-	return rm.Run("git", verb, remote)
+	if err := rm.Run("git", verb, remote); err != nil {
+		return err
+	}
+
+	return rm.Run("git", "submodule", "update", "--init", "--recursive")
 }
 
 func (rm *RepoManager) reset() error {
