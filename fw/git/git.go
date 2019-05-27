@@ -217,7 +217,7 @@ func (rm *RepoManager) CloneOrFetch() error {
 		return err
 	}
 
-	return rm.Run("git", "submodule", "update", "--init", "--recursive")
+	return nil
 }
 
 // AddOrFetchFork retrieves the fork's contents, or adds the fork as a remote, and then does that.
@@ -252,7 +252,11 @@ func (rm *RepoManager) AddOrFetchFork() error {
 
 // Checkout sets the working copy to the ref provided.
 func (rm *RepoManager) Checkout(ref string) error {
-	return rm.Run("git", "checkout", ref)
+	if err := rm.Run("git", "checkout", ref); err != nil {
+		return err
+	}
+
+	return rm.Run("git", "submodule", "update", "--init", "--recursive")
 }
 
 // Rebase is similar to merge with rollback capability. Otherwise it's plain rebase.
