@@ -291,6 +291,8 @@ github.com/tinyci/ci-agents v0.0.0-20190606110138-1b7b8eba61fd h1:wWnv0XjhQshtSA
 github.com/tinyci/ci-agents v0.0.0-20190606110138-1b7b8eba61fd/go.mod h1:+SXM1JTXxGakCc75cK942XscVnWLnKCnUmSkQ3Lg8Ko=
 github.com/tinyci/ci-agents v0.0.0-20190606230132-768651dcd8b3 h1:yb4735i2B0iXUgyAMHAckkHXB6HT4boSsBzZxqTAiK4=
 github.com/tinyci/ci-agents v0.0.0-20190606230132-768651dcd8b3/go.mod h1:+SXM1JTXxGakCc75cK942XscVnWLnKCnUmSkQ3Lg8Ko=
+github.com/tinyci/ci-agents v0.0.0-20190606232432-59db9bbc50e4 h1:COyRpASRoj6MZs6IUnHUd0en8n9WfxhLMMhJNXLNNe4=
+github.com/tinyci/ci-agents v0.0.0-20190606232432-59db9bbc50e4/go.mod h1:+SXM1JTXxGakCc75cK942XscVnWLnKCnUmSkQ3Lg8Ko=
 github.com/uber-go/atomic v1.4.0 h1:yOuPqEq4ovnhEjpHmfFwsqBXDYbQeT6Nb0bwD6XnD5o=
 github.com/uber-go/atomic v1.4.0/go.mod h1:/Ct5t2lcmbJ4OSe/waGBoaVvVqtO0bmtfVNex1PFV8g=
 github.com/uber/jaeger-client-go v2.16.0+incompatible h1:Q2Pp6v3QYiocMxomCaJuwQGFt7E53bPYqEgug/AoBtY=

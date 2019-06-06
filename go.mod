@@ -31,7 +31,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/tinyci/ci-agents v0.0.0-20190606230132-768651dcd8b3
+	github.com/tinyci/ci-agents v0.0.0-20190606232432-59db9bbc50e4
 	github.com/ugorji/go v1.1.5-pre // indirect
 	github.com/urfave/cli v1.20.0
 	go.opencensus.io v0.22.0 // indirect
