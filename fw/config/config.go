@@ -115,17 +115,17 @@ func Load(filename string, c Configurator) *errors.Error {
 	}
 
 	if cfg.ClientConfig.Log != "" {
-		log.ConfigureRemote(cfg.ClientConfig.Log, cert)
+		log.ConfigureRemote(cfg.ClientConfig.Log, cert, false)
 	}
 
 	cfg.Clients.Log = log.NewWithData(path.Base(os.Args[0]), log.FieldMap{"queue": cfg.QueueName, "hostname": cfg.Hostname})
 
-	cfg.Clients.Queue, err = queue.New(cfg.ClientConfig.Queue, cert)
+	cfg.Clients.Queue, err = queue.New(cfg.ClientConfig.Queue, cert, false)
 	if err != nil {
 		return err
 	}
 
-	cfg.Clients.Asset, err = asset.NewClient(cert, cfg.ClientConfig.Asset)
+	cfg.Clients.Asset, err = asset.NewClient(cfg.ClientConfig.Asset, cert, false)
 	if err != nil {
 		return err
 	}
