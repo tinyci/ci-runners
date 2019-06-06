@@ -31,22 +31,21 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/tinyci/ci-agents v0.0.0-20190606110138-1b7b8eba61fd
+	github.com/tinyci/ci-agents v0.0.0-20190606230132-768651dcd8b3
 	github.com/ugorji/go v1.1.5-pre // indirect
 	github.com/urfave/cli v1.20.0
 	go.opencensus.io v0.22.0 // indirect
 	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5 // indirect
 	golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522 // indirect
 	golang.org/x/image v0.0.0-20190523035834-f03afa92d3ff // indirect
-	golang.org/x/lint v0.0.0-20190409202823-959b441ac422 // indirect
 	golang.org/x/mobile v0.0.0-20190509164839-32b2708ab171 // indirect
 	golang.org/x/mod v0.1.0 // indirect
-	golang.org/x/net v0.0.0-20190603091049-60506f45cf65 // indirect
-	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
-	golang.org/x/sys v0.0.0-20190602015325-4c4f7f33c9ed
+	golang.org/x/net v0.0.0-20190606173856-1492cefac77f // indirect
+	golang.org/x/sys v0.0.0-20190606203320-7fc4e5ec1444
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4 // indirect
-	golang.org/x/tools v0.0.0-20190606050223-4d9ae51c2468 // indirect
+	golang.org/x/tools v0.0.0-20190606174628-0139d5756a7d // indirect
 	golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522 // indirect
+	google.golang.org/api v0.6.0 // indirect
 	google.golang.org/appengine v1.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20190605220351-eb0b1bdb6ae6 // indirect
 	google.golang.org/grpc v1.21.1 // indirect
