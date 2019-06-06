@@ -44,7 +44,7 @@ func (r *Runner) Init(ctx *fw.Context) *errors.Error {
 // BeforeRun is executed before the next run is started.
 func (r *Runner) BeforeRun(ctx *fw.Context) *errors.Error {
 	r.NextState = rand.Intn(2) == 0
-	r.LogsvcClient(ctx).Infof("Run Commencing: Rolling the dice yielded %v - %v", r.NextState)
+	r.LogsvcClient(ctx).Infof(ctx.RunCtx, "Run Commencing: Rolling the dice yielded %v - %v", r.NextState)
 
 	return nil
 }

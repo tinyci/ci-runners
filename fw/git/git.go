@@ -25,6 +25,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -180,17 +181,17 @@ func (rm *RepoManager) reset() error {
 }
 
 // CloneOrFetch either clones a new repository, or fetches from an existing origin.
-func (rm *RepoManager) CloneOrFetch() error {
+func (rm *RepoManager) CloneOrFetch(ctx context.Context) error {
 	wf := rm.Logger.WithFields(log.FieldMap{"repo_name": rm.RepoName})
 
 	fi, err := os.Stat(rm.RepoPath)
 	if err != nil {
-		wf.Infof("New repository %v; cloning fresh", rm.RepoName)
+		wf.Infof(ctx, "New repository %v; cloning fresh", rm.RepoName)
 		return rm.clone()
 	}
 
 	if !fi.IsDir() {
-		wf.Errorf("Repository path %v is a file; removing and re-cloning", rm.RepoName)
+		wf.Errorf(ctx, "Repository path %v is a file; removing and re-cloning", rm.RepoName)
 		if err := os.Remove(rm.RepoPath); err != nil {
 			return err
 		}
@@ -198,22 +199,22 @@ func (rm *RepoManager) CloneOrFetch() error {
 	}
 
 	if err := rm.reset(); err != nil {
-		wf.Errorf("resetting repository: %v", err)
+		wf.Errorf(ctx, "resetting repository: %v", err)
 		return err
 	}
 
 	if err := rm.Checkout("master"); err != nil {
-		wf.Errorf("checking out master: %v", err)
+		wf.Errorf(ctx, "checking out master: %v", err)
 		return err
 	}
 
 	if err := rm.fetch("origin", false); err != nil {
-		wf.Errorf("fetching origin: %v", err)
+		wf.Errorf(ctx, "fetching origin: %v", err)
 		return err
 	}
 
 	if err := rm.Rebase("origin/master"); err != nil {
-		wf.Errorf("rebasing: %v", err)
+		wf.Errorf(ctx, "rebasing: %v", err)
 		return err
 	}
 
