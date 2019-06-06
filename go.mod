@@ -31,11 +31,10 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/tinyci/ci-agents v0.0.0-20190606232432-59db9bbc50e4
+	github.com/tinyci/ci-agents v0.0.0-20190606233554-b4786eb841b9
 	github.com/ugorji/go v1.1.5-pre // indirect
 	github.com/urfave/cli v1.20.0
 	go.opencensus.io v0.22.0 // indirect
-	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5 // indirect
 	golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522 // indirect
 	golang.org/x/image v0.0.0-20190523035834-f03afa92d3ff // indirect
 	golang.org/x/mobile v0.0.0-20190509164839-32b2708ab171 // indirect
@@ -46,8 +45,8 @@ require (
 	golang.org/x/tools v0.0.0-20190606174628-0139d5756a7d // indirect
 	golang.org/x/xerrors v0.0.0-20190513163551-3ee3066db522 // indirect
 	google.golang.org/api v0.6.0 // indirect
-	google.golang.org/appengine v1.6.0 // indirect
+	google.golang.org/appengine v1.6.1 // indirect
 	google.golang.org/genproto v0.0.0-20190605220351-eb0b1bdb6ae6 // indirect
 	google.golang.org/grpc v1.21.1 // indirect
-	honnef.co/go/tools v0.0.0-20190605142022-0a11fc526260 // indirect
+	honnef.co/go/tools v0.0.0-20190606233049-bd260fed3277 // indirect
 )
