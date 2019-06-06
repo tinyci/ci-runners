@@ -40,27 +40,27 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 	})
 
 	if err := rm.Init(r.Config.Runner, wf, r.QueueItem.Run.Task.Parent.Name, r.QueueItem.Run.Task.Ref.Repository.Name); err != nil {
-		wf.Errorf("Error initializing repo: %v", err)
+		wf.Errorf(r.Context, "Error initializing repo: %v", err)
 		return nil, err
 	}
 
-	if err := rm.CloneOrFetch(); err != nil {
-		wf.Errorf("Error cloning repo: %v", err)
+	if err := rm.CloneOrFetch(r.Context); err != nil {
+		wf.Errorf(r.Context, "Error cloning repo: %v", err)
 		return nil, err
 	}
 
 	if err := rm.AddOrFetchFork(); err != nil {
-		wf.Errorf("Error cloning fork: %v", err)
+		wf.Errorf(r.Context, "Error cloning fork: %v", err)
 		return nil, err
 	}
 
 	if err := rm.Checkout(r.QueueItem.Run.Task.Ref.SHA); err != nil {
-		wf.Errorf("Error checking out %v: %v", r.QueueItem.Run.Task.Ref.SHA, err)
+		wf.Errorf(r.Context, "Error checking out %v: %v", r.QueueItem.Run.Task.Ref.SHA, err)
 		return nil, err
 	}
 
 	if err := rm.Merge("origin/master"); err != nil {
-		wf.Errorf("Error merging master for %v: %v", r.QueueItem.Run.Task.Ref.SHA, err)
+		wf.Errorf(r.Context, "Error merging master for %v: %v", r.QueueItem.Run.Task.Ref.SHA, err)
 		return nil, err
 	}
 

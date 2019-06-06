@@ -19,6 +19,8 @@ type Context struct {
 	RunID int64
 	// QueueClient is a client to the queuesvc
 	QueueClient *queue.Client
+	// Context for carrying the lifecycle to the clients
+	Context context.Context
 	// CancelFunc is the cancellation func for the global context for your runner's run.
 	CancelFunc context.CancelFunc
 	// CancelSignal and RunnerSignal are signal handlers set up by signal.Notify
@@ -43,7 +45,7 @@ func (ctx *Context) HandleCancel(waitTime time.Duration) {
 	case <-ctx.CancelSignal:
 		ctx.CancelFunc()
 	retry:
-		canceled, err := ctx.QueueClient.GetCancel(ctx.RunID)
+		canceled, err := ctx.QueueClient.GetCancel(ctx.Context, ctx.RunID)
 		if err != nil {
 			fmt.Printf("Could not poll queuesvc; retrying in a second: %v\n", err)
 			time.Sleep(time.Second)
@@ -51,7 +53,7 @@ func (ctx *Context) HandleCancel(waitTime time.Duration) {
 		}
 
 		if !canceled {
-			if err := ctx.QueueClient.SetCancel(ctx.RunID); err != nil {
+			if err := ctx.QueueClient.SetCancel(ctx.Context, ctx.RunID); err != nil {
 				fmt.Printf("Cannot cancel current job, retrying in 1s: %v\n", err)
 				time.Sleep(time.Second)
 				goto retry

@@ -54,7 +54,7 @@ func (r *Runner) BeforeRun(ctx *fw.Context) *errors.Error {
 // Run runs the CI job.
 func (r *Runner) Run(ctx *fw.Context) (bool, *errors.Error) {
 	if err := r.CurrentRun.RunDocker(); err != nil {
-		r.LogsvcClient(ctx).Errorf("Run concluded with error: %v", err)
+		r.LogsvcClient(ctx).Errorf(ctx.RunCtx, "Run concluded with error: %v", err)
 	}
 
 	defer func() { r.CurrentRun = nil }()
