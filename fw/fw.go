@@ -197,15 +197,15 @@ func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 			close(sigCtx.Done)
 			signal.Notify(runnerSignal, unix.SIGINT, unix.SIGTERM)
 
-			didCancel, err := runner.QueueClient().GetCancel(runnerCtx.RunCtx, qi.Run.ID)
+			didCancel, err := runner.QueueClient().GetCancel(context.Background(), qi.Run.ID)
 			if err != nil {
-				runLogger.Errorf(runnerCtx.RunCtx, "Cannot retrieve cancel state of current job, retrying in 1s: %v\n", err)
+				runLogger.Errorf(context.Background(), "Cannot retrieve cancel state of current job, retrying in 1s: %v\n", err)
 				time.Sleep(time.Second)
 			}
 
 			if runnerCtx.RunCtx.Err() == context.DeadlineExceeded && !didCancel {
-				if err := runner.QueueClient().SetCancel(runnerCtx.RunCtx, qi.Run.ID); err != nil {
-					runLogger.Errorf(runnerCtx.RunCtx, "Cannot cancel current job, retrying in 1s: %+v\n", err)
+				if err := runner.QueueClient().SetCancel(context.Background(), qi.Run.ID); err != nil {
+					runLogger.Errorf(context.Background(), "Cannot cancel current job, retrying in 1s: %+v\n", err)
 					time.Sleep(time.Second)
 				}
 
@@ -214,14 +214,14 @@ func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 
 			if !didCancel {
 			normalRetry:
-				if err := runner.QueueClient().SetStatus(runnerCtx.RunCtx, qi.Run.ID, status); err != nil {
-					runLogger.Errorf(runnerCtx.RunCtx, "Status report resulted in error: %v", err)
+				if err := runner.QueueClient().SetStatus(context.Background(), qi.Run.ID, status); err != nil {
+					runLogger.Errorf(context.Background(), "Status report resulted in error: %v", err)
 					time.Sleep(time.Second)
 					goto normalRetry
 				}
 			}
 
-			runLogger.Infof(runnerCtx.RunCtx, "Run finished in %v", time.Since(runnerCtx.RunStart))
+			runLogger.Infof(context.Background(), "Run finished in %v", time.Since(runnerCtx.RunStart))
 		}
 	}
 }
