@@ -18,7 +18,7 @@ dist:
 	rm -rf build
 	mkdir -p build
 	docker pull golang:latest
-	docker run --rm -it \
+	docker run --rm \
 		-e GO111MODULE=on \
 		-e GOBIN=/tmp/bin \
 		-e GOCACHE=/tmp/.cache \
