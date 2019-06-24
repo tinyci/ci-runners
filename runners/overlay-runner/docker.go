@@ -143,16 +143,28 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 		AutoRemove: true,
 	}
 
-	// since this may already not exist; this can error for the right reasons
 	client.ContainerRemove(context.Background(), "running", types.ContainerRemoveOptions{Force: true})
 
-	resp, err := client.ContainerCreate(r.Context, config, hostconfig, &network.NetworkingConfig{}, "running")
-	if err != nil {
-		r.Logger.Errorf(context.Background(), "could not create container: %v", err)
-		return err
+	var outErr error
+
+	for i := 0; i < 5; i++ {
+		resp, err := client.ContainerCreate(r.Context, config, hostconfig, &network.NetworkingConfig{}, "running")
+		if err != nil {
+			r.Logger.Errorf(context.Background(), "could not create container, retrying: %v", err)
+			outErr = err
+			time.Sleep(time.Second)
+			continue
+		}
+
+		r.ContainerID = resp.ID
+		outErr = nil
+		break
 	}
 
-	r.ContainerID = resp.ID
+	if outErr != nil {
+		r.Logger.Errorf(context.Background(), "could not create container, giving up: %v", outErr)
+		return outErr
+	}
 
 	go func() {
 		for {
@@ -233,6 +245,7 @@ func (r *Run) RunDocker() error {
 }
 
 func (r *Run) supervise(client *client.Client, m *overlay.Mount) error {
+	defer time.Sleep(5 * time.Second) // work around a race in docker's deletion code
 	errChan := make(chan error, 1)
 
 	go func() {
