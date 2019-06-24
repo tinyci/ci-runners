@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -99,6 +100,9 @@ func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, error
 		img = fmt.Sprintf("docker.io/%s", img)
 	}
 
+	start := time.Now()
+	r.Logger.Debugf(context.Background(), "starting pull of image %v", img)
+
 	pullRead, err := client.ImagePull(r.Context, img, types.ImagePullOptions{})
 	if err != nil {
 		fmt.Println(err)
@@ -106,8 +110,11 @@ func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, error
 	}
 
 	if err := outputPullRead(pw, pullRead); err != nil {
+		r.Logger.Errorf(context.Background(), "pull of image %v failed with error: %v", img, err)
 		return "", err
 	}
+
+	r.Logger.Debugf(context.Background(), "pull of image %v succeeded in %v", img, time.Since(start))
 
 	return img, nil
 }
@@ -141,23 +148,38 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 
 	resp, err := client.ContainerCreate(r.Context, config, hostconfig, &network.NetworkingConfig{}, "running")
 	if err != nil {
+		r.Logger.Errorf(context.Background(), "could not create container: %v", err)
 		return err
 	}
 
 	r.ContainerID = resp.ID
-	attach, err := client.ContainerAttach(r.Context, r.ContainerID, types.ContainerAttachOptions{Stream: true, Stdin: true, Stdout: true, Stderr: true})
-	if err != nil {
-		return err
-	}
 
-	go io.Copy(pw, attach.Reader)
+	go func() {
+		for {
+			select {
+			case <-r.Context.Done():
+				return
+			default:
+				attach, err := client.ContainerAttach(r.Context, r.ContainerID, types.ContainerAttachOptions{Stream: true, Stdin: true, Stdout: true, Stderr: true})
+				if err == nil {
+					_, err := io.Copy(pw, attach.Reader)
+					if err == nil {
+						return
+					}
+				}
+				r.Logger.Errorf(context.Background(), "error during attach, trying re-attach soon: %v", err)
+				time.Sleep(time.Second)
+			}
+		}
+	}()
 
 	if err := client.ContainerStart(r.Context, r.ContainerID, types.ContainerStartOptions{}); err != nil {
+		r.Logger.Errorf(context.Background(), "could not start container: %v", err)
 		return err
 	}
 
 	if err := client.ContainerResize(r.Context, r.ContainerID, types.ResizeOptions{Height: 25, Width: 80}); err != nil {
-		return err
+		r.Logger.Errorf(context.Background(), "could not resize container's tty, skipping: %v", err)
 	}
 
 	return nil
@@ -198,10 +220,12 @@ func (r *Run) RunDocker() error {
 
 	img, err := r.pullImage(client, pw)
 	if err != nil {
+		r.Logger.Errorf(context.Background(), "could not pull image: %v", err)
 		return err
 	}
 
 	if err := r.boot(client, pw, img, m); err != nil {
+		r.Logger.Errorf(context.Background(), "could not boot container: %v", err)
 		return err
 	}
 
@@ -223,6 +247,7 @@ func (r *Run) supervise(client *client.Client, m *overlay.Mount) error {
 	if waitErr != nil {
 		select {
 		case err := <-errChan: // there can be more than one error here, but we don't care
+			r.Logger.Errorf(context.Background(), "error with cleanup of cid %v: %v", r.ContainerID, err)
 			return err
 		default:
 			return waitErr
