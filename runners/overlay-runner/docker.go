@@ -105,9 +105,9 @@ func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, error
 
 	pullRead, err := client.ImagePull(r.Context, img, types.ImagePullOptions{})
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
+	defer pullRead.Close()
 
 	if err := outputPullRead(pw, pullRead); err != nil {
 		r.Logger.Errorf(context.Background(), "pull of image %v failed with error: %v", img, err)
@@ -174,6 +174,7 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 			default:
 				attach, err := client.ContainerAttach(r.Context, r.ContainerID, types.ContainerAttachOptions{Stream: true, Stdin: true, Stdout: true, Stderr: true})
 				if err == nil {
+					defer attach.Close()
 					_, err := io.Copy(pw, attach.Reader)
 					if err == nil {
 						return
