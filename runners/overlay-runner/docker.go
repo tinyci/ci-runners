@@ -213,6 +213,7 @@ func (r *Run) RunDocker() error {
 	if err != nil {
 		return err
 	}
+	defer client.Close()
 
 	r.StartCancelFunc()
 
