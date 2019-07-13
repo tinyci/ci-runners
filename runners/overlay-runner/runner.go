@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/docker/docker/client"
 	"github.com/tinyci/ci-agents/clients/log"
 	logsvc "github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
@@ -17,6 +18,7 @@ import (
 type Runner struct {
 	Config     *config.Config
 	CurrentRun *Run
+	Docker     *client.Client
 }
 
 // Init is the bootstrap of the runner.
@@ -30,6 +32,12 @@ func (r *Runner) Init(ctx *fw.Context) *errors.Error {
 
 	if err := r.Config.Runner.Validate(); err != nil {
 		return err
+	}
+
+	var eErr error
+	r.Docker, eErr = client.NewClientWithOpts(client.FromEnv)
+	if eErr != nil {
+		return errors.New(eErr)
 	}
 
 	if r.Config.C.Hostname == "" {
@@ -47,8 +55,9 @@ func (r *Runner) Init(ctx *fw.Context) *errors.Error {
 
 // BeforeRun is executed before the next run is started.
 func (r *Runner) BeforeRun(ctx *fw.Context) *errors.Error {
-	r.CurrentRun = NewRun(ctx.RunCtx, ctx.RunCancelFunc, ctx.QueueItem, r.Config, r.LogsvcClient(ctx))
-	return nil
+	var err *errors.Error
+	r.CurrentRun, err = NewRun(ctx.RunCtx, ctx.RunCancelFunc, ctx.QueueItem, r.Config, r.LogsvcClient(ctx), r.Docker)
+	return err
 }
 
 // Run runs the CI job.
