@@ -5,7 +5,9 @@ import (
 	"io"
 	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/tinyci/ci-agents/clients/log"
+	"github.com/tinyci/ci-agents/errors"
 	"github.com/tinyci/ci-agents/model"
 	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
 )
@@ -19,21 +21,23 @@ type Run struct {
 	Status      bool
 	Context     context.Context
 	Cancel      context.CancelFunc
+	Docker      *client.Client
 }
 
 // NewRun constructs a new *Run.
-func NewRun(context context.Context, cancelFunc context.CancelFunc, qi *model.QueueItem, c *config.Config, logger *log.SubLogger) *Run {
+func NewRun(context context.Context, cancelFunc context.CancelFunc, qi *model.QueueItem, c *config.Config, logger *log.SubLogger, client *client.Client) (*Run, *errors.Error) {
 	if logger == nil {
 		logger = c.C.Clients.Log
 	}
 
 	return &Run{
+		Docker:    client,
 		QueueItem: qi,
 		Config:    c,
 		Context:   context,
 		Cancel:    cancelFunc,
 		Logger:    logger,
-	}
+	}, nil
 }
 
 // StartCancelFunc launches a goroutine which waits for the cancel signal.

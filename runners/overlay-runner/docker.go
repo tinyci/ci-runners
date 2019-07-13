@@ -143,7 +143,7 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 		AutoRemove: true,
 	}
 
-	client.ContainerRemove(context.Background(), "running", types.ContainerRemoveOptions{Force: true})
+	client.ContainerRemove(r.Context, "running", types.ContainerRemoveOptions{Force: true})
 
 	var outErr error
 
@@ -172,17 +172,20 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 			case <-r.Context.Done():
 				return
 			default:
-				attach, err := client.ContainerAttach(r.Context, r.ContainerID, types.ContainerAttachOptions{Stream: true, Stdin: true, Stdout: true, Stderr: true})
-				if err == nil {
-					defer attach.Close()
-					_, err := io.Copy(pw, attach.Reader)
-					if err == nil {
-						return
-					}
-				}
+			}
+
+			attach, err := client.ContainerAttach(r.Context, r.ContainerID, types.ContainerAttachOptions{Stream: true, Stdin: true, Stdout: true, Stderr: true})
+			if err != nil {
+				attach.Close()
 				r.Logger.Errorf(context.Background(), "error during attach, trying re-attach soon: %v", err)
 				time.Sleep(time.Second)
+				continue
 			}
+
+			io.Copy(pw, attach.Reader)
+			r.Logger.Debug(context.Background(), "attach closed; returning gracefully")
+			attach.Close()
+			return
 		}
 	}()
 
@@ -209,12 +212,6 @@ func (r *Run) RunDocker() error {
 		}
 	}()
 
-	client, err := client.NewEnvClient()
-	if err != nil {
-		return err
-	}
-	defer client.Close()
-
 	r.StartCancelFunc()
 
 	pr, pw := io.Pipe()
@@ -232,18 +229,18 @@ func (r *Run) RunDocker() error {
 	}
 	defer r.MountCleanup(m)
 
-	img, err := r.pullImage(client, pw)
+	img, err := r.pullImage(r.Docker, pw)
 	if err != nil {
 		r.Logger.Errorf(context.Background(), "could not pull image: %v", err)
 		return err
 	}
 
-	if err := r.boot(client, pw, img, m); err != nil {
+	if err := r.boot(r.Docker, pw, img, m); err != nil {
 		r.Logger.Errorf(context.Background(), "could not boot container: %v", err)
 		return err
 	}
 
-	return r.supervise(client, m)
+	return r.supervise(r.Docker, m)
 }
 
 func (r *Run) supervise(client *client.Client, m *overlay.Mount) error {
@@ -258,20 +255,19 @@ func (r *Run) supervise(client *client.Client, m *overlay.Mount) error {
 		}
 	}()
 
-	exit, waitErr := client.ContainerWait(r.Context, r.ContainerID)
-	if waitErr != nil {
-		select {
-		case err := <-errChan: // there can be more than one error here, but we don't care
-			r.Logger.Errorf(context.Background(), "error with cleanup of cid %v: %v", r.ContainerID, err)
-			return err
-		default:
-			return waitErr
+	exit, waitErr := client.ContainerWait(r.Context, r.ContainerID, container.WaitConditionNotRunning)
+	select {
+	case err := <-waitErr:
+		r.Logger.Errorf(context.Background(), "error waiting with cleanup of cid %v: %v", r.ContainerID, err)
+		return err
+	case err := <-errChan: // there can be more than one error here, but we don't care
+		r.Logger.Errorf(context.Background(), "error with cleanup of cid %v: %v", r.ContainerID, err)
+		return err
+	case ec := <-exit:
+		if ec.StatusCode == 0 {
+			r.Status = true
 		}
-	}
 
-	if exit == 0 {
-		r.Status = true
+		return nil
 	}
-
-	return nil
 }
