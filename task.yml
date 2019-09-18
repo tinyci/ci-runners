@@ -5,7 +5,10 @@ env:
 runs:
   checks:
     command: [ "bash", "checks.sh" ]
-    image: "golang:1.12.6"
+    image: "golang:1.13"
+  build:
+    command: [ "make" ]
+    image: "golang:1.13"
   # staticcheck:
   #   command: [ "make", "staticcheck" ]
   #   image: "golang:1.12.6"
