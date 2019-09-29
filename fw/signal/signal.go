@@ -29,6 +29,9 @@ type Context struct {
 	CancelSignal, RunnerSignal chan os.Signal
 	// Done when closed will terminate the goroutines bound to the context.
 	Done chan struct{}
+
+	// Cancel the launch context as well.
+	LaunchCancel context.CancelFunc
 }
 
 // HandleCancel allows the user to program the queuesvc with a cancellation
@@ -44,8 +47,9 @@ func (ctx *Context) HandleCancel(waitTime time.Duration) {
 		return
 	case <-ctx.CancelSignal:
 		ctx.CancelFunc()
+		ctx.LaunchCancel()
 	retry:
-		canceled, err := ctx.QueueClient.GetCancel(ctx.Context, ctx.RunID)
+		canceled, err := ctx.QueueClient.GetCancel(context.Background(), ctx.RunID)
 		if err != nil {
 			fmt.Printf("Could not poll queuesvc; retrying in a second: %v\n", err)
 			time.Sleep(time.Second)
@@ -53,7 +57,7 @@ func (ctx *Context) HandleCancel(waitTime time.Duration) {
 		}
 
 		if !canceled {
-			if err := ctx.QueueClient.SetCancel(ctx.Context, ctx.RunID); err != nil {
+			if err := ctx.QueueClient.SetCancel(context.Background(), ctx.RunID); err != nil {
 				fmt.Printf("Cannot cancel current job, retrying in 1s: %v\n", err)
 				time.Sleep(time.Second)
 				goto retry

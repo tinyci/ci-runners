@@ -132,6 +132,7 @@ func Run(e Entrypoint) error {
 
 func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 	runner := e.Launch
+	launchCtx, launchCancel := context.WithCancel(context.Background())
 	return func(ctx *cli.Context) error {
 		baseContext := &Context{CLIContext: ctx}
 		if err := runner.Init(baseContext); err != nil {
@@ -142,17 +143,21 @@ func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 		go func() {
 			<-runnerSignal
 			runner.LogsvcClient(baseContext).Info(context.Background(), "Shutting down runner")
+			launchCancel()
 			os.Exit(0)
 		}()
 		signal.Notify(runnerSignal, unix.SIGINT, unix.SIGTERM)
 
-		runner.LogsvcClient(baseContext).Info(context.Background(), "Initializing runner")
+		runner.LogsvcClient(baseContext).Info(launchCtx, "Initializing runner")
 
 		for {
-			qi, err := runner.QueueClient().NextQueueItem(context.Background(), runner.QueueName(), runner.Hostname())
+			qi, err := runner.QueueClient().NextQueueItem(launchCtx, runner.QueueName(), runner.Hostname())
 			if err != nil {
 				if !err.Contains(errors.ErrNotFound) {
-					runner.LogsvcClient(baseContext).Errorf(context.Background(), "Error reading from queue: %v", err)
+					runner.LogsvcClient(baseContext).Errorf(launchCtx, "Error reading from queue: %v", err)
+				}
+				if err.Contains(context.Canceled) {
+					os.Exit(0)
 				}
 				time.Sleep(time.Second)
 				continue
@@ -172,6 +177,7 @@ func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 			signal.Stop(runnerSignal)
 
 			sigCtx := &sig.Context{
+				LaunchCancel: launchCancel,
 				CancelFunc:   runnerCtx.RunCancelFunc,
 				QueueClient:  runner.QueueClient(),
 				RunID:        qi.Run.ID,
@@ -195,6 +201,7 @@ func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 			}
 
 			close(sigCtx.Done)
+			signal.Stop(cancelSig)
 			signal.Notify(runnerSignal, unix.SIGINT, unix.SIGTERM)
 
 			didCancel, err := runner.QueueClient().GetCancel(context.Background(), qi.Run.ID)

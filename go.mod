@@ -19,7 +19,6 @@ require (
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/fatih/color v1.7.0
 	github.com/gogo/protobuf v1.3.0 // indirect
-	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/google/pprof v0.0.0-20190908185732-236ed259b199 // indirect
 	github.com/gorilla/mux v1.7.3 // indirect
@@ -43,7 +42,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563 // indirect
 	github.com/rogpeppe/go-internal v1.3.2 // indirect
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271 // indirect
-	github.com/tinyci/ci-agents v0.1.2-0.20190918113741-fff8dc3df144
+	github.com/tinyci/ci-agents v0.1.2-0.20190923092506-ba80e455a758
 	github.com/urfave/cli v1.22.1
 	go.opencensus.io v0.22.1 // indirect
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect
