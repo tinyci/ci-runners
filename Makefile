@@ -2,7 +2,8 @@ all: checks
 	GO111MODULE=on go install -v ./...
 
 checks:
-	bash checks.sh
+	go get github.com/golangci/golangci-lint/...
+	golangci-lint run -v 
 
 staticcheck:
 	go get -d ./...

@@ -19,17 +19,15 @@ require (
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/fatih/color v1.7.0
 	github.com/gogo/protobuf v1.3.0 // indirect
+	github.com/golangci/golangci-lint v1.19.1 // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/google/pprof v0.0.0-20190908185732-236ed259b199 // indirect
 	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/jackc/pgx v3.6.0+incompatible // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect
-	github.com/kr/pty v1.1.8 // indirect
 	github.com/mattn/go-sqlite3 v1.11.0 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/onsi/ginkgo v1.10.1 // indirect
-	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/openzipkin/zipkin-go v0.2.2 // indirect
@@ -45,7 +43,6 @@ require (
 	github.com/tinyci/ci-agents v0.1.2-0.20190923092506-ba80e455a758
 	github.com/urfave/cli v1.22.1
 	go.opencensus.io v0.22.1 // indirect
-	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect
 	golang.org/x/exp v0.0.0-20190918111812-0cae2de268ce // indirect
 	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a // indirect
 	golang.org/x/mobile v0.0.0-20190910184405-b558ed863381 // indirect
@@ -53,6 +50,5 @@ require (
 	golang.org/x/sys v0.0.0-20190916202348-b4ddaad3f8a3
 	golang.org/x/tools v0.0.0-20190917215024-905c8ffbfa41 // indirect
 	google.golang.org/api v0.10.0 // indirect
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/jcmturner/gokrb5.v7 v7.3.0 // indirect
 )
