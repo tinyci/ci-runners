@@ -4,7 +4,7 @@ env:
   - GO111MODULE=on
 runs:
   checks:
-    command: [ "bash", "checks.sh" ]
+    command: [ "make", "checks" ]
     image: "golang:1.13"
   build:
     command: [ "make" ]
