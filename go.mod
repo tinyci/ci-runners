@@ -51,4 +51,5 @@ require (
 	golang.org/x/tools v0.0.0-20190917215024-905c8ffbfa41 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	gopkg.in/jcmturner/gokrb5.v7 v7.3.0 // indirect
+	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
