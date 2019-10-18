@@ -142,8 +142,10 @@ func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 		runnerSignal := make(chan os.Signal, 2)
 		go func() {
 			<-runnerSignal
-			runner.LogsvcClient(baseContext).Info(context.Background(), "Shutting down runner")
 			launchCancel()
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			runner.LogsvcClient(baseContext).Info(ctx, "Shutting down runner")
 			os.Exit(0)
 		}()
 		signal.Notify(runnerSignal, unix.SIGINT, unix.SIGTERM)
@@ -174,7 +176,6 @@ func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 			}
 
 			cancelSig := make(chan os.Signal, 2)
-			signal.Stop(runnerSignal)
 
 			sigCtx := &sig.Context{
 				LaunchCancel: launchCancel,
@@ -202,7 +203,6 @@ func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 
 			close(sigCtx.Done)
 			signal.Stop(cancelSig)
-			signal.Notify(runnerSignal, unix.SIGINT, unix.SIGTERM)
 
 			didCancel, err := runner.QueueClient().GetCancel(context.Background(), qi.Run.ID)
 			if err != nil {
