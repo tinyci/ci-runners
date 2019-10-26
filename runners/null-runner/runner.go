@@ -78,9 +78,9 @@ func (r *Runner) LogsvcClient(ctx *fw.Context) *log.SubLogger {
 		return wf.WithFields(log.FieldMap{
 			"run_id":     fmt.Sprintf("%v", ctx.QueueItem.Run.ID),
 			"task_id":    fmt.Sprintf("%v", ctx.QueueItem.Run.Task.ID),
-			"parent":     ctx.QueueItem.Run.Task.Parent.Name,
-			"repository": ctx.QueueItem.Run.Task.Ref.Repository.Name,
-			"sha":        ctx.QueueItem.Run.Task.Ref.SHA,
+			"parent":     ctx.QueueItem.Run.Task.Submission.BaseRef.Repository.Name,
+			"repository": ctx.QueueItem.Run.Task.Submission.HeadRef.Repository.Name,
+			"sha":        ctx.QueueItem.Run.Task.Submission.HeadRef.SHA,
 		})
 	}
 
