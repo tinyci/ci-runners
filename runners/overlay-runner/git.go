@@ -20,7 +20,7 @@ func jsonIO(from, to interface{}) error {
 
 // PullRepo retrieves the repository and puts it in the right spot.
 func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
-	queueTok := r.QueueItem.Run.Task.Parent.Owner.Token
+	queueTok := r.QueueItem.Run.Task.Submission.BaseRef.Repository.Owner.Token
 	tok := &types.OAuthToken{}
 
 	if err := jsonIO(queueTok, tok); err != nil {
@@ -34,12 +34,12 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 	}
 
 	wf := r.Logger.WithFields(log.FieldMap{
-		"owner":          r.QueueItem.Run.Task.Parent.Owner.Username,
+		"owner":          r.QueueItem.Run.Task.Submission.BaseRef.Repository.Owner.Username,
 		"base_repo_path": r.Config.Runner.BaseRepoPath,
-		"repo_name":      r.QueueItem.Run.Task.Parent.Name,
+		"repo_name":      r.QueueItem.Run.Task.Submission.BaseRef.Repository.Name,
 	})
 
-	if err := rm.Init(r.Config.Runner, wf, r.QueueItem.Run.Task.Parent.Name, r.QueueItem.Run.Task.Ref.Repository.Name); err != nil {
+	if err := rm.Init(r.Config.Runner, wf, r.QueueItem.Run.Task.Submission.BaseRef.Repository.Name, r.QueueItem.Run.Task.Submission.HeadRef.Repository.Name); err != nil {
 		wf.Errorf(r.Context, "Error initializing repo: %v", err)
 		return nil, err
 	}
@@ -54,13 +54,13 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 		return nil, err
 	}
 
-	if err := rm.Checkout(r.QueueItem.Run.Task.Ref.SHA); err != nil {
-		wf.Errorf(r.Context, "Error checking out %v: %v", r.QueueItem.Run.Task.Ref.SHA, err)
+	if err := rm.Checkout(r.QueueItem.Run.Task.Submission.HeadRef.SHA); err != nil {
+		wf.Errorf(r.Context, "Error checking out %v: %v", r.QueueItem.Run.Task.Submission.HeadRef.SHA, err)
 		return nil, err
 	}
 
 	if err := rm.Merge("origin/master"); err != nil {
-		wf.Errorf(r.Context, "Error merging master for %v: %v", r.QueueItem.Run.Task.Ref.SHA, err)
+		wf.Errorf(r.Context, "Error merging master for %v: %v", r.QueueItem.Run.Task.Submission.HeadRef.SHA, err)
 		return nil, err
 	}
 
