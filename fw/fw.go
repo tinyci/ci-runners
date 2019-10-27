@@ -221,7 +221,8 @@ func (e *Entrypoint) loop() func(ctx *cli.Context) error {
 
 			if !didCancel {
 			normalRetry:
-				if err := runner.QueueClient().SetStatus(context.Background(), qi.Run.ID, status); err != nil {
+				// FIXME use an error constant for this check
+				if err := runner.QueueClient().SetStatus(context.Background(), qi.Run.ID, status); err != nil && !err.Contains("status already set") {
 					runLogger.Errorf(context.Background(), "Status report resulted in error: %v", err)
 					time.Sleep(time.Second)
 					goto normalRetry
