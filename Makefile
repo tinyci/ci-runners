@@ -1,4 +1,4 @@
-all: checks
+all:
 	GO111MODULE=on go install -v ./...
 
 checks:

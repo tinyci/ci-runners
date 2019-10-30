@@ -9,8 +9,8 @@ import (
 	logsvc "github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
 	"github.com/tinyci/ci-agents/errors"
-	"github.com/tinyci/ci-runners/fw"
 	fwConfig "github.com/tinyci/ci-runners/fw/config"
+	fwcontext "github.com/tinyci/ci-runners/fw/context"
 	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
 )
 
@@ -22,7 +22,7 @@ type Runner struct {
 }
 
 // Init is the bootstrap of the runner.
-func (r *Runner) Init(ctx *fw.Context) *errors.Error {
+func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 	// we reload the clients on each run
 	r.Config = &config.Config{C: fwConfig.Config{Clients: &fwConfig.Clients{}}}
 	err := fwConfig.Load(ctx.CLIContext.GlobalString("config"), r.Config)
@@ -54,16 +54,16 @@ func (r *Runner) Init(ctx *fw.Context) *errors.Error {
 }
 
 // BeforeRun is executed before the next run is started.
-func (r *Runner) BeforeRun(ctx *fw.Context) *errors.Error {
+func (r *Runner) BeforeRun(ctx *fwcontext.RunContext) *errors.Error {
 	var err *errors.Error
-	r.CurrentRun, err = NewRun(ctx.RunCtx, ctx.RunCancelFunc, ctx.QueueItem, r.Config, r.LogsvcClient(ctx), r.Docker)
+	r.CurrentRun, err = NewRun(ctx.Ctx, ctx.CancelFunc, ctx.QueueItem, r.Config, r.LogsvcClient(ctx), r.Docker)
 	return err
 }
 
 // Run runs the CI job.
-func (r *Runner) Run(ctx *fw.Context) (bool, *errors.Error) {
+func (r *Runner) Run(ctx *fwcontext.RunContext) (bool, *errors.Error) {
 	if err := r.CurrentRun.RunDocker(); err != nil {
-		r.LogsvcClient(ctx).Errorf(ctx.RunCtx, "Run concluded with error: %v", err)
+		r.LogsvcClient(ctx).Errorf(ctx.Ctx, "Run concluded with error: %v", err)
 	}
 
 	defer func() { r.CurrentRun = nil }()
@@ -87,7 +87,7 @@ func (r *Runner) QueueClient() *queue.Client {
 }
 
 // LogsvcClient returns the system log client. Must be called after configuration is initialized
-func (r *Runner) LogsvcClient(ctx *fw.Context) *log.SubLogger {
+func (r *Runner) LogsvcClient(ctx *fwcontext.RunContext) *log.SubLogger {
 	log := r.Config.C.Clients.Log.WithFields(log.FieldMap{"hostname": r.Config.C.Hostname})
 
 	if ctx.QueueItem != nil {

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	err := fw.Run(fw.Entrypoint{
+	err := fw.Run(&fw.Entrypoint{
 		Usage: "Run tinyci jobs with overlayfs and docker",
 		Description: `
 This runner mocks a real runner and provides no function but to report statuses.

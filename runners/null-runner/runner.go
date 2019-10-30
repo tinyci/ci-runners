@@ -9,8 +9,8 @@ import (
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
 	"github.com/tinyci/ci-agents/errors"
-	"github.com/tinyci/ci-runners/fw"
 	"github.com/tinyci/ci-runners/fw/config"
+	fwcontext "github.com/tinyci/ci-runners/fw/context"
 )
 
 // Runner encapsulates an infinite lifecycle overlay-runner.
@@ -20,7 +20,7 @@ type Runner struct {
 }
 
 // Init is the bootstrap of the runner.
-func (r *Runner) Init(ctx *fw.Context) *errors.Error {
+func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 	rand.Seed(time.Now().UnixNano())
 	// we reload the clients on each run
 	r.Config = &config.Config{Clients: &config.Clients{}}
@@ -42,15 +42,15 @@ func (r *Runner) Init(ctx *fw.Context) *errors.Error {
 }
 
 // BeforeRun is executed before the next run is started.
-func (r *Runner) BeforeRun(ctx *fw.Context) *errors.Error {
+func (r *Runner) BeforeRun(ctx *fwcontext.RunContext) *errors.Error {
 	r.NextState = rand.Intn(2) == 0
-	r.LogsvcClient(ctx).Infof(ctx.RunCtx, "Run Commencing: Rolling the dice yielded %v - %v", r.NextState)
+	r.LogsvcClient(ctx).Infof(ctx.Ctx, "Run Commencing: Rolling the dice yielded %v - %v", r.NextState)
 
 	return nil
 }
 
 // Run runs the CI job.
-func (r *Runner) Run(ctx *fw.Context) (bool, *errors.Error) {
+func (r *Runner) Run(ctx *fwcontext.RunContext) (bool, *errors.Error) {
 	return r.NextState, nil
 }
 
@@ -71,7 +71,7 @@ func (r *Runner) QueueClient() *queue.Client {
 }
 
 // LogsvcClient returns the system log client. Must be called after configuration is initialized
-func (r *Runner) LogsvcClient(ctx *fw.Context) *log.SubLogger {
+func (r *Runner) LogsvcClient(ctx *fwcontext.RunContext) *log.SubLogger {
 	wf := r.Config.Clients.Log.WithFields(log.FieldMap{"queue": r.Config.QueueName, "hostname": r.Config.Hostname})
 
 	if ctx.QueueItem != nil {
