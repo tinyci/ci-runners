@@ -9,6 +9,3 @@ runs:
   build:
     command: [ "make" ]
     image: "golang:1.13"
-  # staticcheck:
-  #   command: [ "make", "staticcheck" ]
-  #   image: "golang:1.12.6"
