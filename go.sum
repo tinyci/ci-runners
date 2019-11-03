@@ -579,6 +579,8 @@ github.com/tinyci/ci-agents v0.1.2-0.20190923092506-ba80e455a758 h1:4Iz6sOPp0i4t
 github.com/tinyci/ci-agents v0.1.2-0.20190923092506-ba80e455a758/go.mod h1:+hRs8/Gy9bj8/HWz6ZUyUj6ls9MlsjZdi/HWSYi2rf8=
 github.com/tinyci/ci-agents v0.1.2-0.20191026101004-e37174039e20 h1:sXtcXBD9uXMwGJ9ulobGs6m6UYg4+puty/lBVRZpAJU=
 github.com/tinyci/ci-agents v0.1.2-0.20191026101004-e37174039e20/go.mod h1:KyzwVqQanddne7Tx9O78ZqDRtd1NSVZp+X8QwNruW2w=
+github.com/tinyci/ci-agents v0.1.2-0.20191102052830-0cad15320649 h1:gcQ264aWqe34T++JjpwyKUJ40aMRaEp99w2TwGtop/Q=
+github.com/tinyci/ci-agents v0.1.2-0.20191102052830-0cad15320649/go.mod h1:U7On030BRoV2TY4Cju1SeCwL/WfNLFfdy0owvlDfzho=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/uber-go/atomic v1.4.0 h1:yOuPqEq4ovnhEjpHmfFwsqBXDYbQeT6Nb0bwD6XnD5o=
 github.com/uber-go/atomic v1.4.0/go.mod h1:/Ct5t2lcmbJ4OSe/waGBoaVvVqtO0bmtfVNex1PFV8g=

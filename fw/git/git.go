@@ -68,7 +68,7 @@ type RepoManager struct {
 	ForkRemote string
 }
 
-func systemInit() *errors.Error {
+func systemInit() error {
 	home := os.Getenv("HOME")
 
 	if home == "" {

@@ -20,7 +20,7 @@ type Runner struct {
 }
 
 // Init is the bootstrap of the runner.
-func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
+func (r *Runner) Init(ctx *fwcontext.Context) error {
 	rand.Seed(time.Now().UnixNano())
 	// we reload the clients on each run
 	r.Config = &config.Config{Clients: &config.Clients{}}
@@ -32,7 +32,7 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 	if r.Config.Hostname == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
-			return errors.New(err).Wrap("Could not retrieve hostname")
+			return errors.New(err).(errors.Error).Wrap("Could not retrieve hostname")
 		}
 		r.Config.Hostname = hostname
 	}
@@ -42,7 +42,7 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 }
 
 // BeforeRun is executed before the next run is started.
-func (r *Runner) BeforeRun(ctx *fwcontext.RunContext) *errors.Error {
+func (r *Runner) BeforeRun(ctx *fwcontext.RunContext) error {
 	r.NextState = rand.Intn(2) == 0
 	r.LogsvcClient(ctx).Infof(ctx.Ctx, "Run Commencing: Rolling the dice yielded %v - %v", r.NextState)
 
@@ -50,7 +50,7 @@ func (r *Runner) BeforeRun(ctx *fwcontext.RunContext) *errors.Error {
 }
 
 // Run runs the CI job.
-func (r *Runner) Run(ctx *fwcontext.RunContext) (bool, *errors.Error) {
+func (r *Runner) Run(ctx *fwcontext.RunContext) (bool, error) {
 	return r.NextState, nil
 }
 

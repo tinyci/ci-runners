@@ -102,7 +102,7 @@ func (c *Config) ExtraLoad() error {
 
 // Load loads the runner configuration and configures clients -- logsvc,
 // queuesvc, and assetsvc clients with optional TLS settings.
-func Load(filename string, c Configurator) *errors.Error {
+func Load(filename string, c Configurator) error {
 	if err := config.Parse(filename, c); err != nil {
 		return errors.New(err)
 	}
