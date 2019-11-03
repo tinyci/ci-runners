@@ -22,7 +22,7 @@ type Runner struct {
 }
 
 // Init is the bootstrap of the runner.
-func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
+func (r *Runner) Init(ctx *fwcontext.Context) error {
 	// we reload the clients on each run
 	r.Config = &config.Config{C: fwConfig.Config{Clients: &fwConfig.Clients{}}}
 	err := fwConfig.Load(ctx.CLIContext.GlobalString("config"), r.Config)
@@ -43,7 +43,7 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 	if r.Config.C.Hostname == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
-			return errors.New(err).Wrap("Could not retrieve hostname")
+			return errors.New(err).(errors.Error).Wrap("Could not retrieve hostname")
 		}
 		r.Config.C.Hostname = hostname
 	}
@@ -54,14 +54,14 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 }
 
 // BeforeRun is executed before the next run is started.
-func (r *Runner) BeforeRun(ctx *fwcontext.RunContext) *errors.Error {
-	var err *errors.Error
+func (r *Runner) BeforeRun(ctx *fwcontext.RunContext) error {
+	var err error
 	r.CurrentRun, err = NewRun(ctx.Ctx, ctx.CancelFunc, ctx.QueueItem, r.Config, r.LogsvcClient(ctx), r.Docker)
 	return err
 }
 
 // Run runs the CI job.
-func (r *Runner) Run(ctx *fwcontext.RunContext) (bool, *errors.Error) {
+func (r *Runner) Run(ctx *fwcontext.RunContext) (bool, error) {
 	if err := r.CurrentRun.RunDocker(); err != nil {
 		r.LogsvcClient(ctx).Errorf(ctx.Ctx, "Run concluded with error: %v", err)
 	}
