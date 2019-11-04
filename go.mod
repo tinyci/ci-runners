@@ -39,14 +39,14 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20190826022208-cac0b30c2563 // indirect
 	github.com/rogpeppe/go-internal v1.3.2 // indirect
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271 // indirect
-	github.com/tinyci/ci-agents v0.1.2-0.20191102052830-0cad15320649
+	github.com/tinyci/ci-agents v0.2.0
 	github.com/urfave/cli v1.22.1
 	go.opencensus.io v0.22.1 // indirect
 	golang.org/x/exp v0.0.0-20190918111812-0cae2de268ce // indirect
 	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a // indirect
 	golang.org/x/mobile v0.0.0-20190910184405-b558ed863381 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
-	golang.org/x/sys v0.0.0-20191026070338-33540a1f6037
+	golang.org/x/sys v0.0.0-20191104094858-e8c54fb511f6
 	golang.org/x/tools v0.0.0-20190917215024-905c8ffbfa41 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	gopkg.in/jcmturner/gokrb5.v7 v7.3.0 // indirect
