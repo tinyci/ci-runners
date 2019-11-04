@@ -11,14 +11,14 @@ require (
 	github.com/Shopify/sarama v1.23.1 // indirect
 	github.com/alecthomas/units v0.0.0-20190910110746-680d30ca3117 // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b // indirect
-	github.com/creack/pty v1.1.7
+	github.com/creack/pty v1.1.9
 	github.com/denisenkom/go-mssqldb v0.0.0-20190915052044-aa4949efa320 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/fatih/color v1.7.0
-	github.com/gogo/protobuf v1.3.0 // indirect
+	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golangci/golangci-lint v1.19.1 // indirect
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/google/pprof v0.0.0-20190908185732-236ed259b199 // indirect
@@ -50,4 +50,5 @@ require (
 	golang.org/x/tools v0.0.0-20190917215024-905c8ffbfa41 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	gopkg.in/jcmturner/gokrb5.v7 v7.3.0 // indirect
+	gopkg.in/yaml.v2 v2.2.5 // indirect
 )
