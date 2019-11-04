@@ -216,12 +216,10 @@ func (e *Entrypoint) respondToCancelSignal(runnerCtx *fwcontext.RunContext) {
 			return
 		default:
 			cancel, _ := e.Launch.QueueClient().GetCancel(runnerCtx.Ctx, runnerCtx.QueueItem.Run.ID)
-			if cancel {
-				if err := e.Launch.QueueClient().SetCancel(runnerCtx.Ctx, runnerCtx.QueueItem.Run.ID); err != nil {
-					time.Sleep(time.Second)
-					continue
-				}
+			if cancel && runnerCtx.CancelFunc != nil {
+				runnerCtx.CancelFunc()
 			}
+			time.Sleep(time.Second)
 		}
 	}
 }
