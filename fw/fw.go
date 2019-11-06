@@ -227,6 +227,8 @@ func (e *Entrypoint) respondToCancelSignal(runnerCtx *fwcontext.RunContext) {
 func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, baseContext *fwcontext.Context, runner Runner) error {
 	log := runner.LogsvcClient(&fwcontext.RunContext{Context: baseContext})
 	runnerSignal := e.makeRunnerSignal(cancel, log, nil)
+	defer signal.Stop(runnerSignal)
+	defer close(runnerSignal)
 
 	qi, err := runner.QueueClient().NextQueueItem(ctx, runner.QueueName(), runner.Hostname())
 	if err != nil {
@@ -278,7 +280,9 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 	}
 	runnerSignal = e.makeRunnerSignal(cancel, log, runnerCtx)
 	defer signal.Stop(runnerSignal)
+	defer close(runnerSignal)
 	signal.Stop(sigCtx.Channel)
+	close(sigCtx.Channel)
 
 	if e.processCancel(ctx, runnerCtx, runner) {
 		return nil
