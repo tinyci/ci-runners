@@ -5,7 +5,7 @@ env:
 runs:
   checks:
     command: [ "make", "checks" ]
-    image: "golang:1.13"
+    image: "golang:1.14"
   build:
     command: [ "make" ]
-    image: "golang:1.13"
+    image: "golang:1.14"
