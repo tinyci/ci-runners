@@ -1,3 +1,5 @@
+GO_VERSION ?= 1.14
+
 all:
 	GO111MODULE=on go install -v ./...
 
@@ -27,6 +29,6 @@ dist:
 		-v ${PWD}/build:/tmp/bin \
 		-w /go/src/github.com/tinyci/ci-runners \
 		-v ${PWD}:/go/src/github.com/tinyci/ci-runners \
-		golang:latest \
+		golang:${GO_VERSION} \
 		go install -v ./...
 	tar cvzf release.tar.gz build/*
