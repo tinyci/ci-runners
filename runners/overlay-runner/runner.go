@@ -35,7 +35,7 @@ func (r *Runner) Init(ctx *fwcontext.Context) error {
 	}
 
 	var eErr error
-	r.Docker, eErr = client.NewClientWithOpts(client.FromEnv)
+	r.Docker, eErr = client.NewEnvClient()
 	if eErr != nil {
 		return errors.New(eErr)
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/fatih/color"
+	"github.com/tinyci/ci-agents/errors"
 	"github.com/tinyci/ci-runners/fw/overlay"
 )
 
@@ -255,16 +256,19 @@ func (r *Run) supervise(client *client.Client, m *overlay.Mount) error {
 		}
 	}()
 
-	exit, waitErr := client.ContainerWait(r.Context, r.ContainerID, container.WaitConditionNotRunning)
+	exit, waitErr := client.ContainerWait(r.Context, r.ContainerID)
+
 	select {
-	case err := <-waitErr:
-		r.Logger.Errorf(context.Background(), "error waiting with cleanup of cid %v: %v", r.ContainerID, err)
-		return err
 	case err := <-errChan: // there can be more than one error here, but we don't care
 		r.Logger.Errorf(context.Background(), "error with cleanup of cid %v: %v", r.ContainerID, err)
 		return err
-	case ec := <-exit:
-		if ec.StatusCode == 0 {
+	default:
+		if waitErr != nil {
+			r.Logger.Errorf(context.Background(), "error waiting with cleanup of cid %v: %v", r.ContainerID, waitErr)
+			return errors.New(waitErr)
+		}
+
+		if exit == 0 {
 			r.Status = true
 		}
 
