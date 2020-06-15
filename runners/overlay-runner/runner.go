@@ -6,7 +6,6 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/tinyci/ci-agents/clients/log"
-	logsvc "github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
 	"github.com/tinyci/ci-agents/errors"
 	fwConfig "github.com/tinyci/ci-runners/fw/config"
@@ -88,10 +87,10 @@ func (r *Runner) QueueClient() *queue.Client {
 
 // LogsvcClient returns the system log client. Must be called after configuration is initialized
 func (r *Runner) LogsvcClient(ctx *fwcontext.RunContext) *log.SubLogger {
-	log := r.Config.C.Clients.Log.WithFields(log.FieldMap{"hostname": r.Config.C.Hostname})
+	logger := r.Config.C.Clients.Log.WithFields(log.FieldMap{"hostname": r.Config.C.Hostname})
 
 	if ctx.QueueItem != nil {
-		return log.WithFields(logsvc.FieldMap{
+		return logger.WithFields(log.FieldMap{
 			"run_id":     fmt.Sprintf("%v", ctx.QueueItem.Run.ID),
 			"task_id":    fmt.Sprintf("%v", ctx.QueueItem.Run.Task.ID),
 			"parent":     ctx.QueueItem.Run.Task.Submission.BaseRef.Repository.Name,
@@ -100,5 +99,5 @@ func (r *Runner) LogsvcClient(ctx *fwcontext.RunContext) *log.SubLogger {
 		})
 	}
 
-	return log
+	return logger
 }
