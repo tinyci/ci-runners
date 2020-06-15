@@ -49,6 +49,12 @@ type Runner interface {
 	// `Run` interface.
 	MakeRun(string, *fwcontext.RunContext) (Run, *errors.Error)
 
+	// AfterRun executes after the run has been completed.
+	AfterRun(string, *fwcontext.RunContext)
+
+	// Ready just indicates when the runner is ready for another queue item
+	Ready() bool
+
 	//
 	// Data calls
 	//
@@ -109,9 +115,6 @@ type Entrypoint struct {
 	TeardownTimeout time.Duration
 	// Launch is the Runner intended to be executed.
 	Launch Runner
-
-	// MaxConcurrency is the maximum concurrency this runner will utilize.
-	MaxConcurrency uint
 
 	terminate      bool
 	terminateMutex sync.RWMutex
@@ -265,7 +268,7 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 		os.Exit(0)
 	}
 
-	if count >= e.MaxConcurrency || e.getTerminate() {
+	if e.getTerminate() || !runner.Ready() {
 		time.Sleep(time.Second)
 		return nil
 	}
@@ -312,6 +315,8 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 			e.runMapMutex.Lock()
 			delete(e.runMap, run)
 			e.runMapMutex.Unlock()
+
+			runner.AfterRun(runName, runnerCtx)
 		}()
 
 		if err := run.BeforeRun(); err != nil {

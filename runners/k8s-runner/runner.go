@@ -5,68 +5,48 @@ import (
 	"os"
 	"sync"
 
-	"github.com/docker/docker/client"
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
 	"github.com/tinyci/ci-agents/errors"
 	"github.com/tinyci/ci-runners/fw"
 	fwConfig "github.com/tinyci/ci-runners/fw/config"
 	fwcontext "github.com/tinyci/ci-runners/fw/context"
-	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
+	v1 "github.com/tinyci/k8s-api/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
+
+var v1Scheme *runtime.Scheme
+
+func init() {
+	v1Scheme = runtime.NewScheme()
+	v1.AddToScheme(v1Scheme)
+	corev1.AddToScheme(v1Scheme)
+}
 
 // Runner encapsulates an infinite lifecycle overlay-runner.
 type Runner struct {
-	Config  *config.Config
-	Docker  *client.Client
-	running bool
+	Config *Config
+
+	runCount uint
 	sync.Mutex
 }
 
-// Ready indicates the runner is ready.
+// Ready returns true if the runner is ready to accept more work.
 func (r *Runner) Ready() bool {
 	r.Lock()
 	defer r.Unlock()
-	return !r.running
-}
 
-// MakeRun makes a new run for the framework to use.
-func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, *errors.Error) {
-	r.Lock()
-	defer r.Unlock()
-	r.running = true
-
-	return &Run{
-		runner: r,
-		name:   name,
-		runCtx: runCtx,
-	}, nil
-}
-
-// AfterRun sets the running state to false.
-func (r *Runner) AfterRun(name string, runCtx *fwcontext.RunContext) {
-	r.Lock()
-	defer r.Unlock()
-	r.running = false
+	return r.runCount < r.Config.MaxConcurrency
 }
 
 // Init is the bootstrap of the runner.
 func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 	// we reload the clients on each run
-	r.Config = &config.Config{C: fwConfig.Config{Clients: &fwConfig.Clients{}}}
+	r.Config = &Config{C: fwConfig.Config{Clients: &fwConfig.Clients{}}}
 	err := fwConfig.Load(ctx.CLIContext.GlobalString("config"), r.Config)
 	if err != nil {
 		return err
-	}
-
-	if err := r.Config.Runner.Validate(); err != nil {
-		return err
-	}
-
-	var eErr error
-	r.Docker, eErr = client.NewEnvClient()
-	if eErr != nil {
-		return errors.New(eErr)
 	}
 
 	if r.Config.C.Hostname == "" {
@@ -80,6 +60,28 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 	r.Config.C.Clients.Log = r.Config.C.Clients.Log.WithFields(log.FieldMap{"hostname": r.Config.C.Hostname})
 
 	return nil
+}
+
+// MakeRun makes a new run with a new context and name.
+func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, *errors.Error) {
+	r.Lock()
+	defer r.Unlock()
+	r.runCount++
+
+	return &Run{
+		name:   name,
+		runCtx: runCtx,
+		ctx:    runCtx.Ctx,
+		logger: r.LogsvcClient(runCtx),
+		runner: r,
+	}, nil
+}
+
+// AfterRun decrements the run count
+func (r *Runner) AfterRun(name string, runCtx *fwcontext.RunContext) {
+	r.Lock()
+	defer r.Unlock()
+	r.runCount--
 }
 
 // Hostname is the reported hostname of the machine; an identifier. Not

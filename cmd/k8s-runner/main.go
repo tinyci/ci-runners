@@ -5,15 +5,15 @@ import (
 
 	"github.com/tinyci/ci-runners/fw"
 	"github.com/tinyci/ci-runners/fw/utils"
-	runner "github.com/tinyci/ci-runners/runners/overlay-runner"
+	runner "github.com/tinyci/ci-runners/runners/k8s-runner"
 )
 
 func main() {
 	err := fw.Launch(&fw.Entrypoint{
-		Usage: "Run tinyci jobs with overlayfs and docker",
+		Usage: "Run tinyci jobs with kubernetes",
 		Description: `
-This runner provides a docker interface to running tinyci builds. It also
-leverages an overlayfs backend and git cache to make clones fast.
+This runner runs both internal and external to kubernetes, and provides a
+mechanism for running work through the CIJob controller.
 `,
 		Launch:          &runner.Runner{},
 		TeardownTimeout: 10 * time.Second,

@@ -130,5 +130,5 @@ func Load(filename string, c Configurator) *errors.Error {
 		return err
 	}
 
-	return nil
+	return c.ExtraLoad()
 }
