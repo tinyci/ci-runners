@@ -1,0 +1,22 @@
+---
+
+- name: "check docker"
+  command: "test -x /usr/bin/docker"
+  ignore_errors: true
+  register: docker_exists
+
+- name: "install docker"
+  shell: "curl -sSL get.docker.com | env CHANNEL=stable bash"
+  when: docker_exists.rc != 0 
+
+- name: "create tinyci-docker user"
+  user:
+    name: tinyci-docker
+    shell: /sbin/nologin
+    groups: docker
+
+- name: "install python docker modules"
+  apt:
+    update_cache: true
+    name: 
+      - python3-docker
