@@ -1,0 +1,68 @@
+---
+
+- name: install dependencies
+  apt:
+    name: "build-essential"
+
+- name: Check for golang
+  command: "test -x /usr/local/go/bin/go"
+  ignore_errors: true
+  register: golang_exists
+
+- name: Install golang
+  shell: "curl -sSL https://dl.google.com/go/go{{ go_version }}.linux-amd64.tar.gz | tar xz -C /usr/local"
+  when: golang_exists is failed
+
+- name: Make gopath
+  file:
+    name: /go
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Get tinyci/ci-runners
+  git:
+    repo: "{{ repository }}"
+    dest: /go/src/github.com/tinyci/ci-runners
+
+- name: Build runners
+  shell: 
+    cmd: 'PATH="${PATH}:/usr/local/go/bin" GOPATH=/go go install ./...'
+    chdir: /go/src/github.com/tinyci/ci-runners
+
+- name: Create the tinyCI configuration directory
+  file:
+    name: /etc/tinyci
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Create the tinyCI runner config file
+  template:
+    src: runner-config.j2
+    dest: "/etc/tinyci/runner.yml"
+    owner: root
+    group: root
+    mode: '0600'
+  register: overlay_runner_config_state
+
+- name: Create the systemd tinyCI runner unit
+  template:
+    src: overlay-runner.service.j2
+    dest: /etc/systemd/system/overlay-runner.service
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Ensure overlay-runner is started
+  systemd:
+    name: overlay-runner
+    enabled: true
+    state: started
+    daemon_reload: yes
+
+- name: graceful restart of overlay-runner
+  command: "pkill -HUP overlay-runner"
+  when: overlay_runner_config_state is changed or release_binaries_updated is changed

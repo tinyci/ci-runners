@@ -1,0 +1,10 @@
+---
+runner_name: "{{ inventory_hostname }}"
+repository: "https://github.com/tinyci/ci-runners"
+go_version: "1.14.4"
+runner:
+  queue: "default"
+  clients:
+    queuesvc: "tinyci-dev:6001"
+    assetsvc: "tinyci-dev:6002"
+    logsvc: "tinyci-dev:6005"
