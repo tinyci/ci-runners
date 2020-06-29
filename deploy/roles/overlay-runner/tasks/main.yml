@@ -25,6 +25,7 @@
   git:
     repo: "{{ repository }}"
     dest: /go/src/github.com/tinyci/ci-runners
+  register: repository_updated
 
 - name: Build runners
   shell: 
@@ -65,4 +66,4 @@
 
 - name: graceful restart of overlay-runner
   command: "pkill -HUP overlay-runner"
-  when: overlay_runner_config_state is changed or release_binaries_updated is changed
+  when: repository_updated is changed or overlay_runner_config_state is changed
