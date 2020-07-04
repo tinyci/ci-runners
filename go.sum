@@ -653,6 +653,8 @@ github.com/tinyci/ci-agents v0.2.3 h1:uetK8Il6OJDXIGL+lEa+XdAI9mWLeyfx18Ih5pH2Z5
 github.com/tinyci/ci-agents v0.2.3/go.mod h1:ZVOLNR+sBciPDdaTEmnvH4uaUqGppUxEQMB07fkvgG8=
 github.com/tinyci/ci-agents v0.2.4-0.20200629061413-d6e5617f46e4 h1:9r2EjPxybPU/KIgTryqDf5fbxTOu84K6H6bkTpSGmiI=
 github.com/tinyci/ci-agents v0.2.4-0.20200629061413-d6e5617f46e4/go.mod h1:JOxkKDSCOeUpUYEC/q3H3F/L9TNVhGOAywJiLje+h+I=
+github.com/tinyci/ci-agents v0.2.4 h1:Kd7P7WGGA1C8b8Kw909F/ue2hTC9/sOqvSrjWgVrbrc=
+github.com/tinyci/ci-agents v0.2.4/go.mod h1:JOxkKDSCOeUpUYEC/q3H3F/L9TNVhGOAywJiLje+h+I=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/uber-go/atomic v1.4.0/go.mod h1:/Ct5t2lcmbJ4OSe/waGBoaVvVqtO0bmtfVNex1PFV8g=
 github.com/uber/jaeger-client-go v2.19.0+incompatible h1:pbwbYfHUoaase0oPQOdZ1GcaUjImYGimUXSQ/+8+Z8Q=

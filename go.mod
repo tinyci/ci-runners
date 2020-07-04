@@ -46,7 +46,7 @@ require (
 	github.com/rogpeppe/go-internal v1.3.2 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271 // indirect
-	github.com/tinyci/ci-agents v0.2.4-0.20200629061413-d6e5617f46e4
+	github.com/tinyci/ci-agents v0.2.4
 	github.com/uber/jaeger-client-go v2.24.0+incompatible // indirect
 	github.com/urfave/cli v1.22.4
 	go.mongodb.org/mongo-driver v1.3.4 // indirect
