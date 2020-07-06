@@ -354,6 +354,7 @@ github.com/google/go-cmp v0.4.0/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/go-cmp v0.5.0/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-github v17.0.0+incompatible h1:N0LgJ1j65A7kfXrZnUDaYCs/Sf4rEjNlfyDHW9dolSY=
 github.com/google/go-github v17.0.0+incompatible/go.mod h1:zLgOLi98H3fifZn+44m+umXrS52loVEgC2AApnigrVQ=
+github.com/google/go-github/v32 v32.0.0/go.mod h1:rIEpZD9CTDQwDK9GDrtMTycQNA4JU3qBsCizh3q2WCI=
 github.com/google/go-querystring v1.0.0 h1:Xkwi/a1rcvNg1PPYe5vI8GbeBY/jrVuDX5ASuANWTrk=
 github.com/google/go-querystring v1.0.0/go.mod h1:odCYkC5MyYFN7vkCjXpyrEuKhc/BUO6wN/zVPAxq5ck=
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
@@ -655,6 +656,8 @@ github.com/tinyci/ci-agents v0.2.4-0.20200629061413-d6e5617f46e4 h1:9r2EjPxybPU/
 github.com/tinyci/ci-agents v0.2.4-0.20200629061413-d6e5617f46e4/go.mod h1:JOxkKDSCOeUpUYEC/q3H3F/L9TNVhGOAywJiLje+h+I=
 github.com/tinyci/ci-agents v0.2.4 h1:Kd7P7WGGA1C8b8Kw909F/ue2hTC9/sOqvSrjWgVrbrc=
 github.com/tinyci/ci-agents v0.2.4/go.mod h1:JOxkKDSCOeUpUYEC/q3H3F/L9TNVhGOAywJiLje+h+I=
+github.com/tinyci/ci-agents v0.2.5 h1:yOBQU54ssIkU3maonOrGWFwBAbx9Rn15mPMg1Usxe3k=
+github.com/tinyci/ci-agents v0.2.5/go.mod h1:Q9bkA3nZ0+1XBFeYcuu2NsL37MVDxUn5Q+hN8jX/v6Q=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/uber-go/atomic v1.4.0/go.mod h1:/Ct5t2lcmbJ4OSe/waGBoaVvVqtO0bmtfVNex1PFV8g=
 github.com/uber/jaeger-client-go v2.19.0+incompatible h1:pbwbYfHUoaase0oPQOdZ1GcaUjImYGimUXSQ/+8+Z8Q=
