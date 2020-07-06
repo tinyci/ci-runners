@@ -3,6 +3,8 @@ package runner
 import (
 	"encoding/json"
 	"io"
+	"path"
+	"strings"
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/types"
@@ -33,6 +35,8 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 		AccessToken: tok.Token,
 	}
 
+	defaultBranchName := strings.TrimLeft(strings.TrimLeft(r.QueueItem.Run.Task.Submission.BaseRef.RefName, "heads/"), "tags/")
+
 	wf := r.Logger.WithFields(log.FieldMap{
 		"owner":          r.QueueItem.Run.Task.Submission.BaseRef.Repository.Owner.Username,
 		"base_repo_path": r.Config.Runner.BaseRepoPath,
@@ -44,7 +48,7 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 		return nil, err
 	}
 
-	if err := rm.CloneOrFetch(r.Context); err != nil {
+	if err := rm.CloneOrFetch(r.Context, defaultBranchName); err != nil {
 		wf.Errorf(r.Context, "Error cloning repo: %v", err)
 		return nil, err
 	}
@@ -59,7 +63,7 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 		return nil, err
 	}
 
-	if err := rm.Merge("origin/master"); err != nil {
+	if err := rm.Merge(path.Join("origin", defaultBranchName)); err != nil {
 		wf.Errorf(r.Context, "Error merging master for %v: %v", r.QueueItem.Run.Task.Submission.HeadRef.SHA, err)
 		return nil, err
 	}

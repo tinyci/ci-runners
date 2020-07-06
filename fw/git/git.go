@@ -181,7 +181,7 @@ func (rm *RepoManager) reset() error {
 }
 
 // CloneOrFetch either clones a new repository, or fetches from an existing origin.
-func (rm *RepoManager) CloneOrFetch(ctx context.Context) error {
+func (rm *RepoManager) CloneOrFetch(ctx context.Context, defaultBranch string) error {
 	wf := rm.Logger.WithFields(log.FieldMap{"repo_name": rm.RepoName})
 
 	fi, err := os.Stat(rm.RepoPath)
@@ -203,8 +203,8 @@ func (rm *RepoManager) CloneOrFetch(ctx context.Context) error {
 		return err
 	}
 
-	if err := rm.Checkout("master"); err != nil {
-		wf.Errorf(ctx, "checking out master: %v", err)
+	if err := rm.Checkout(defaultBranch); err != nil {
+		wf.Errorf(ctx, "checking out default branch %q: %v", defaultBranch, err)
 		return err
 	}
 
@@ -213,7 +213,7 @@ func (rm *RepoManager) CloneOrFetch(ctx context.Context) error {
 		return err
 	}
 
-	if err := rm.Rebase("origin/master"); err != nil {
+	if err := rm.Rebase(path.Join("origin", defaultBranch)); err != nil {
 		wf.Errorf(ctx, "rebasing: %v", err)
 		return err
 	}
