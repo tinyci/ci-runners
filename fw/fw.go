@@ -42,12 +42,12 @@ type Runner interface {
 	//
 	// Init is the entrypoint of the runner application and will be run shortly
 	// after command line arguments are processed.
-	Init(*fwcontext.Context) error
+	Init(*fwcontext.Context) *errors.Error
 	// BeforeRun is executed to set up the run but not actually execute it.
-	BeforeRun(*fwcontext.RunContext) error
+	BeforeRun(*fwcontext.RunContext) *errors.Error
 	// Run is the actual running of the job. Errors from contexts are handled as
 	// cancellations. The status (pass/fail) is returned as the primary value.
-	Run(*fwcontext.RunContext) (bool, error)
+	Run(*fwcontext.RunContext) (bool, *errors.Error)
 
 	//
 	// Data calls
@@ -224,7 +224,7 @@ func (e *Entrypoint) respondToCancelSignal(runnerCtx *fwcontext.RunContext) {
 	}
 }
 
-func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, baseContext *fwcontext.Context, runner Runner) error {
+func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, baseContext *fwcontext.Context, runner Runner) *errors.Error {
 	log := runner.LogsvcClient(&fwcontext.RunContext{Context: baseContext})
 	runnerSignal := e.makeRunnerSignal(cancel, log, nil)
 	defer signal.Stop(runnerSignal)
@@ -232,10 +232,10 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 
 	qi, err := runner.QueueClient().NextQueueItem(ctx, runner.QueueName(), runner.Hostname())
 	if err != nil {
-		if !err.(errors.Error).Contains(errors.ErrNotFound) {
+		if !err.Contains(errors.ErrNotFound) {
 			log.Errorf(ctx, "Error reading from queue: %v", err)
 		}
-		if err.(errors.Error).Contains(context.Canceled) {
+		if err.Contains(context.Canceled) {
 			e.SetTerminate(log)
 		} else {
 			time.Sleep(time.Second)

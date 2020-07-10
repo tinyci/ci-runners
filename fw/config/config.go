@@ -57,7 +57,7 @@ type Configurator interface {
 	Config() *Config
 	// ExtraLoad is for doing any additional work that the framework does not
 	// prescribe already.
-	ExtraLoad() error
+	ExtraLoad() *errors.Error
 }
 
 // Config is the on-disk runner configuration
@@ -96,13 +96,13 @@ func (c *Config) Config() *Config {
 }
 
 // ExtraLoad does nothing for the basic configuration.
-func (c *Config) ExtraLoad() error {
+func (c *Config) ExtraLoad() *errors.Error {
 	return nil
 }
 
 // Load loads the runner configuration and configures clients -- logsvc,
 // queuesvc, and assetsvc clients with optional TLS settings.
-func Load(filename string, c Configurator) error {
+func Load(filename string, c Configurator) *errors.Error {
 	if err := config.Parse(filename, c); err != nil {
 		return errors.New(err)
 	}
