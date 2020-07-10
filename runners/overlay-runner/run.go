@@ -25,7 +25,7 @@ type Run struct {
 }
 
 // NewRun constructs a new *Run.
-func NewRun(context context.Context, cancelFunc context.CancelFunc, qi *model.QueueItem, c *config.Config, logger *log.SubLogger, client *client.Client) (*Run, error) {
+func NewRun(context context.Context, cancelFunc context.CancelFunc, qi *model.QueueItem, c *config.Config, logger *log.SubLogger, client *client.Client) (*Run, *errors.Error) {
 	if logger == nil {
 		logger = c.C.Clients.Log
 	}
@@ -69,7 +69,7 @@ func (r *Run) StartCancelFunc() {
 func (r *Run) StartLogger(rc io.Reader) {
 	go func() {
 		if err := r.Config.C.Clients.Asset.Write(r.Context, r.QueueItem.Run.ID, rc); err != nil {
-			r.Logger.Error(r.Context, err.(errors.Error).Wrapf("Writing log for Run ID %d", r.QueueItem.Run.ID))
+			r.Logger.Error(r.Context, err.Wrapf("Writing log for Run ID %d", r.QueueItem.Run.ID))
 		}
 	}()
 }

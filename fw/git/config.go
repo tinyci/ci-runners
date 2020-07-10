@@ -24,7 +24,7 @@ type Config struct {
 
 // Validate corrects or errors out when the configuration doesn't match
 // expectations.
-func (rc *Config) Validate() error {
+func (rc *Config) Validate() *errors.Error {
 	if rc.LoginScriptPath == "" {
 		rc.LoginScriptPath = defaultLoginScriptPath
 	}
