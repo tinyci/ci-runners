@@ -21,11 +21,15 @@
     group: root
     mode: 0755
 
+- name: Clean tinyci/ci-runners
+  file:
+    path: /go/src/github.com/tinyci/ci-runners
+    state: absent
+
 - name: Get tinyci/ci-runners
-  git:
-    repo: "{{ repository }}"
-    dest: /go/src/github.com/tinyci/ci-runners
-  register: repository_updated
+  copy:
+    src: "{{ lookup('env', 'GOPATH') }}/src/github.com/tinyci/ci-runners"
+    dest: /go/src/github.com/tinyci/
 
 - name: Build runners
   shell: 
@@ -66,4 +70,4 @@
 
 - name: graceful restart of overlay-runner
   command: "pkill -HUP overlay-runner"
-  when: repository_updated is changed or overlay_runner_config_state is changed
+  when: overlay_runner_config_state is changed
