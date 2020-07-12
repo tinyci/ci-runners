@@ -20,8 +20,10 @@ package fw
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,21 +35,19 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+type runMap map[Run]*fwcontext.RunContext
+
 // Runner is the interface that a runner must implement to leverage this
 // framework.
 type Runner interface {
 
-	//
-	// Lifecycle hooks
-	//
 	// Init is the entrypoint of the runner application and will be run shortly
 	// after command line arguments are processed.
 	Init(*fwcontext.Context) *errors.Error
-	// BeforeRun is executed to set up the run but not actually execute it.
-	BeforeRun(*fwcontext.RunContext) *errors.Error
-	// Run is the actual running of the job. Errors from contexts are handled as
-	// cancellations. The status (pass/fail) is returned as the primary value.
-	Run(*fwcontext.RunContext) (bool, *errors.Error)
+
+	// MakeRun allows the user to customize the run before returning it. See the
+	// `Run` interface.
+	MakeRun(string, *fwcontext.RunContext) (Run, *errors.Error)
 
 	//
 	// Data calls
@@ -64,6 +64,31 @@ type Runner interface {
 	QueueClient() *queue.Client
 	// LogsvcClient is a client to the logsvc.
 	LogsvcClient(*fwcontext.RunContext) *log.SubLogger
+}
+
+// Run is the lifecycle of a single run.
+type Run interface {
+	fmt.Stringer
+
+	// Name is the name of the run
+	Name() string
+
+	// RunContext returns the *fwcontext.RunContext used to create this run.
+	RunContext() *fwcontext.RunContext
+
+	//
+	// Lifecycle hooks
+	//
+
+	// BeforeRun is executed to set up the run but not actually execute it.
+	BeforeRun() *errors.Error
+
+	// Run is the actual running of the job. Errors from contexts are handled as
+	// cancellations. The status (pass/fail) is returned as the primary value.
+	Run() (bool, *errors.Error)
+
+	// AfterRun is executed after the run has completed.
+	AfterRun() *errors.Error
 }
 
 // Entrypoint is composed of boot-time entities used to start up the
@@ -85,17 +110,25 @@ type Entrypoint struct {
 	// Launch is the Runner intended to be executed.
 	Launch Runner
 
+	// MaxConcurrency is the maximum concurrency this runner will utilize.
+	MaxConcurrency uint
+
 	terminate      bool
 	terminateMutex sync.RWMutex
+
+	runMap      runMap
+	runMapMutex sync.RWMutex
 }
 
-// Run runs the given Entrypoint, which should contain a Runner to launch as
+// Launch runs the given Entrypoint, which should contain a Runner to launch as
 // well as other information about the runner.  On error you can assume the
 // only safe option is to exit.
 //
 // At the time of this call, arguments will be parsed. Avoid parsing arguments
 // before this call.
-func Run(e *Entrypoint) error {
+func Launch(e *Entrypoint) error {
+	e.runMap = runMap{}
+
 	app := cli.NewApp()
 	app.Usage = e.Usage
 	app.Description = e.Description
@@ -139,53 +172,48 @@ func (e *Entrypoint) loop() func(*cli.Context) error {
 		log := runner.LogsvcClient(&fwcontext.RunContext{Context: baseContext})
 		log.Info(lifetimeCtx, "Initializing runner")
 
-		e.makeGracefulRestartSignal(lifetimeCtx, log)
+		e.makeGracefulRestartSignal(lifetimeCancel, log)
 
 		for {
 			if err := e.iterate(lifetimeCtx, lifetimeCancel, baseContext, runner); err != nil {
 				return err
 			}
-			if e.getTerminate() {
-				log.Info(lifetimeCtx, "Termination requested after the end of the run")
-				return nil
-			}
 		}
 	}
 }
 
-func (e *Entrypoint) makeGracefulRestartSignal(ctx context.Context, log *log.SubLogger) {
+func (e *Entrypoint) makeGracefulRestartSignal(lifetimeCancel context.CancelFunc, log *log.SubLogger) {
 	sigChan := make(chan os.Signal, 1)
 
 	go func() {
-		for range sigChan {
-			log.Info(ctx, "Termination requested at the end of any outstanding run")
-			e.SetTerminate(log)
-		}
-	}()
-
-	signal.Notify(sigChan, unix.SIGHUP)
-}
-
-func (e *Entrypoint) makeRunnerSignal(lifetimeCancel context.CancelFunc, log *log.SubLogger, runnerCtx *fwcontext.RunContext) chan os.Signal {
-	runnerSignal := make(chan os.Signal, 2)
-	go func() {
-		for sig := range runnerSignal {
+		for sig := range sigChan {
 			switch sig {
 			case unix.SIGINT, unix.SIGTERM:
-				if runnerCtx != nil {
-					e.processCancel(context.Background(), runnerCtx, e.Launch)
+				wg := &sync.WaitGroup{}
+				e.runMapMutex.Lock() // will hold until exit
+				wg.Add(len(e.runMap))
+				for run, runnerCtx := range e.runMap {
+					go func(run Run, runnerCtx *fwcontext.RunContext, wg *sync.WaitGroup) {
+						defer wg.Done()
+						e.processCancel(context.Background(), runnerCtx, e.Launch)
+					}(run, runnerCtx, wg)
 				}
+				wg.Wait()
 				lifetimeCancel()
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 				log.Info(ctx, "Shutting down runner")
 				cancel()
 				os.Exit(0)
+			case unix.SIGHUP:
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				log.Info(ctx, "Termination requested at the end of any outstanding run")
+				cancel()
+				e.SetTerminate(log)
 			}
 		}
 	}()
-	signal.Notify(runnerSignal, unix.SIGINT, unix.SIGTERM)
 
-	return runnerSignal
+	signal.Notify(sigChan, unix.SIGHUP, unix.SIGINT, unix.SIGTERM)
 }
 
 func (e *Entrypoint) processCancel(ctx context.Context, runnerCtx *fwcontext.RunContext, runner Runner) bool {
@@ -197,8 +225,9 @@ retry:
 		time.Sleep(time.Second)
 	}
 
-	if runnerCtx.Ctx.Err() == context.DeadlineExceeded && !didCancel {
-		if err := runner.QueueClient().SetCancel(ctx, runnerCtx.QueueItem.Run.ID); err != nil {
+	if !didCancel {
+		runLogger.Info(ctx, "Canceling run")
+		if err := runner.QueueClient().SetCancel(context.Background(), runnerCtx.QueueItem.Run.ID); err != nil {
 			runLogger.Errorf(ctx, "Cannot cancel current job, retrying in 1s: %+v\n", err)
 			time.Sleep(time.Second)
 		}
@@ -226,9 +255,20 @@ func (e *Entrypoint) respondToCancelSignal(runnerCtx *fwcontext.RunContext) {
 
 func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, baseContext *fwcontext.Context, runner Runner) *errors.Error {
 	log := runner.LogsvcClient(&fwcontext.RunContext{Context: baseContext})
-	runnerSignal := e.makeRunnerSignal(cancel, log, nil)
-	defer signal.Stop(runnerSignal)
-	defer close(runnerSignal)
+
+	e.runMapMutex.RLock()
+	count := uint(len(e.runMap))
+	e.runMapMutex.RUnlock()
+
+	if count == 0 && e.getTerminate() {
+		log.Info(ctx, "Termination requested after the end of the run")
+		os.Exit(0)
+	}
+
+	if count >= e.MaxConcurrency || e.getTerminate() {
+		time.Sleep(time.Second)
+		return nil
+	}
 
 	qi, err := runner.QueueClient().NextQueueItem(ctx, runner.QueueName(), runner.Hostname())
 	if err != nil {
@@ -254,96 +294,55 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 		runnerCtx.Ctx, runnerCtx.CancelFunc = context.WithTimeout(context.Background(), qi.Run.RunSettings.Timeout)
 	}
 
-	sigCtx := &SignalContext{
-		QueueClient: runner.QueueClient(),
-		RunContext:  runnerCtx,
-		Ctx:         ctx,
-		Log:         runLogger,
-		Channel:     make(chan os.Signal, 2),
-		Entrypoint:  e,
+	runName := strings.Join([]string{runner.QueueName(), fmt.Sprintf("%d", qi.Run.ID)}, ".")
+
+	run, err := runner.MakeRun(runName, runnerCtx)
+	if err != nil {
+		return err
 	}
 
-	go sigCtx.HandleCancel()
-	signal.Stop(runnerSignal)
-	signal.Notify(sigCtx.Channel, unix.SIGINT, unix.SIGTERM)
+	e.runMapMutex.Lock()
+	e.runMap[run] = runnerCtx
+	e.runMapMutex.Unlock()
 
 	go e.respondToCancelSignal(runnerCtx)
 
-	if err := runner.BeforeRun(runnerCtx); err != nil {
-		return err
-	}
+	go func() {
+		defer func() {
+			e.runMapMutex.Lock()
+			delete(e.runMap, run)
+			e.runMapMutex.Unlock()
+		}()
 
-	status, err := runner.Run(runnerCtx)
-	if err != nil {
-		runLogger.Errorf(ctx, "Run concluded with FATAL ERROR: %v", err)
-		return err
-	}
-	runnerSignal = e.makeRunnerSignal(cancel, log, runnerCtx)
-	defer signal.Stop(runnerSignal)
-	defer close(runnerSignal)
-	signal.Stop(sigCtx.Channel)
-	close(sigCtx.Channel)
-
-	if e.processCancel(ctx, runnerCtx, runner) {
-		return nil
-	}
-
-normalRetry:
-	if err := runner.QueueClient().SetStatus(ctx, qi.Run.ID, status); err != nil {
-		runLogger.Errorf(ctx, "Status report resulted in error: %v", err)
-		time.Sleep(time.Second)
-		goto normalRetry
-	}
-
-	runLogger.Infof(ctx, "Run finished in %v", time.Since(runnerCtx.Start))
-	return nil
-}
-
-// SignalContext is the context in which the handlers run under; they will be used to
-// store clients as well as data about the run.
-//
-// Creating a new one of these for each run is a necessity.
-type SignalContext struct {
-	// QueueClient is a client to the queuesvc
-	QueueClient *queue.Client
-	// RunContext is the run context
-	RunContext *fwcontext.RunContext
-
-	Ctx context.Context
-
-	Log     *log.SubLogger
-	Channel chan os.Signal
-
-	Entrypoint *Entrypoint
-}
-
-// HandleCancel allows the user to program the queuesvc with a cancellation
-// when a signal is received, and simultaneously trigger a cancellation of the
-// run.
-//
-// To use this function, populate the *Context as described; then call this in a
-// goroutine. Once triggered, it is assuming the daemon is shutting down and
-// will trigger all cancellation behavior in the context.
-func (sigctx *SignalContext) HandleCancel() {
-	for range sigctx.Channel {
-		sigctx.Entrypoint.SetTerminate(sigctx.Log)
-	retry:
-		canceled, err := sigctx.QueueClient.GetCancel(sigctx.Ctx, sigctx.RunContext.QueueItem.Run.ID)
-		if err != nil {
-			sigctx.Log.Errorf(sigctx.Ctx, "Could not poll queuesvc; retrying in a second: %v\n", err)
-			time.Sleep(time.Second)
-			goto retry
+		if err := run.BeforeRun(); err != nil {
+			runLogger.Errorf(ctx, "Run configuration errored: %v", err)
+			return
 		}
 
-		if !canceled {
-			if err := sigctx.QueueClient.SetCancel(sigctx.Ctx, sigctx.RunContext.QueueItem.Run.ID); err != nil {
-				sigctx.Log.Errorf(sigctx.Ctx, "Cannot cancel current job, retrying in 1s: %v\n", err)
+		status, err := run.Run()
+		if err != nil {
+			runLogger.Errorf(ctx, "Run concluded with FATAL ERROR: %v", err)
+			return
+		}
+
+		if err := run.AfterRun(); err != nil {
+			runLogger.Errorf(ctx, "AfterRun hook failed with fatal error: %v", err)
+			return
+		}
+
+	normalRetry:
+		cancel, _ := e.Launch.QueueClient().GetCancel(runnerCtx.Ctx, runnerCtx.QueueItem.Run.ID)
+
+		if !cancel {
+			if err := runner.QueueClient().SetStatus(ctx, qi.Run.ID, status); err != nil {
+				runLogger.Errorf(ctx, "Status report resulted in error: %v", err)
 				time.Sleep(time.Second)
-				goto retry
+				goto normalRetry
 			}
 		}
 
-		sigctx.Log.Errorf(sigctx.Ctx, "Signal received; will wait %v for cleanup to occur\n", sigctx.Entrypoint.TeardownTimeout)
-		time.Sleep(sigctx.Entrypoint.TeardownTimeout)
-	}
+		runLogger.Infof(ctx, "Run finished in %v", time.Since(runnerCtx.Start))
+	}()
+
+	return nil
 }

@@ -7,13 +7,14 @@ import (
 )
 
 func main() {
-	err := fw.Run(&fw.Entrypoint{
+	err := fw.Launch(&fw.Entrypoint{
 		Usage: "Run tinyci jobs with overlayfs and docker",
 		Description: `
 This runner mocks a real runner and provides no function but to report statuses.
 `,
 		Launch:          &runner.Runner{},
 		TeardownTimeout: 0,
+		MaxConcurrency:  10,
 	})
 	if err != nil {
 		utils.ErrOut(err)

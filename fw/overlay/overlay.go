@@ -54,7 +54,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/tinyci/ci-agents/errors"
 	"golang.org/x/sys/unix"
 )
 
@@ -67,7 +67,7 @@ type Mount struct {
 	Target string
 }
 
-func (m *Mount) validate() error {
+func (m *Mount) validate() *errors.Error {
 	for _, dir := range []string{m.Lower, m.Work, m.Upper, m.Target} {
 		if !filepath.IsAbs(dir) {
 			return errors.Errorf("%q must be an absolute path", dir)
@@ -81,10 +81,10 @@ func (m *Mount) validate() error {
 }
 
 // Cleanup cleans up the work directories.
-func (m *Mount) Cleanup() error {
+func (m *Mount) Cleanup() *errors.Error {
 	for _, dir := range []string{m.Work, m.Upper, m.Target} {
 		if err := os.RemoveAll(dir); err != nil {
-			return err
+			return errors.New(err)
 		}
 	}
 
@@ -92,17 +92,17 @@ func (m *Mount) Cleanup() error {
 }
 
 // Unmount unmounts the overlayfs.
-func (m *Mount) Unmount() error {
+func (m *Mount) Unmount() *errors.Error {
 	if err := m.validate(); err != nil {
 		return err
 	}
-	return unix.Unmount(m.Target, unix.UMOUNT_NOFOLLOW)
+	return errors.New(unix.Unmount(m.Target, unix.UMOUNT_NOFOLLOW))
 }
 
 // Mount mounts the overlayfs, creating any dirs necessary
-func (m *Mount) Mount() error {
+func (m *Mount) Mount() *errors.Error {
 	if err := m.validate(); err != nil {
-		return err
+		return errors.New(err)
 	}
-	return unix.Mount("overlay", m.Target, "overlay", 0, fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", m.Lower, m.Upper, m.Work))
+	return errors.New(unix.Mount("overlay", m.Target, "overlay", 0, fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", m.Lower, m.Upper, m.Work)))
 }

@@ -68,7 +68,7 @@ type RepoManager struct {
 	ForkRemote string
 }
 
-func systemInit() error {
+func systemInit() *errors.Error {
 	home := os.Getenv("HOME")
 
 	if home == "" {
@@ -93,7 +93,7 @@ func systemInit() error {
 }
 
 // Init initializes the repomanager for use. Must be called before using other functions.
-func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRepoName string) error {
+func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRepoName string) *errors.Error {
 	if err := systemInit(); err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRep
 	return nil
 }
 
-func (rm *RepoManager) validateRepoName(repoName string) error {
+func (rm *RepoManager) validateRepoName(repoName string) *errors.Error {
 	if strings.Count(repoName, "/") != 1 {
 		return errors.New("missing partition between owner and repository")
 	}
@@ -132,10 +132,10 @@ func (rm *RepoManager) validateRepoName(repoName string) error {
 // CreateLoginScript creates a login script to be used by GIT_ASKPASS git
 // credentials functionality. It merely contains `echo <token>` which is enough
 // to get us in.
-func (rm *RepoManager) createLoginScript() error {
+func (rm *RepoManager) createLoginScript() *errors.Error {
 	f, err := os.Create(rm.Config.LoginScriptPath)
 	if err != nil {
-		return err
+		return errors.New(err)
 	}
 	defer f.Close()
 
@@ -145,25 +145,25 @@ func (rm *RepoManager) createLoginScript() error {
 echo %q
 `, rm.AccessToken))
 	if err != nil {
-		return err
+		return errors.New(err)
 	}
 
-	return os.Chmod(f.Name(), 0700) // #nosec
+	return errors.New(os.Chmod(f.Name(), 0700)) // #nosec
 }
 
-func (rm *RepoManager) removeLoginScript() error {
-	return os.Remove(rm.Config.LoginScriptPath)
+func (rm *RepoManager) removeLoginScript() *errors.Error {
+	return errors.New(os.Remove(rm.Config.LoginScriptPath))
 }
 
-func (rm *RepoManager) clone() error {
+func (rm *RepoManager) clone() *errors.Error {
 	if err := os.MkdirAll(rm.RepoPath, 0700); err != nil {
-		return err
+		return errors.New(err)
 	}
 
 	return rm.Run("git", "clone", fmt.Sprintf("https://github.com/%s", rm.RepoName), ".")
 }
 
-func (rm *RepoManager) fetch(remote string, pull bool) error {
+func (rm *RepoManager) fetch(remote string, pull bool) *errors.Error {
 	verb := "fetch"
 	if pull {
 		verb = "pull"
@@ -172,7 +172,7 @@ func (rm *RepoManager) fetch(remote string, pull bool) error {
 	return rm.Run("git", verb, remote)
 }
 
-func (rm *RepoManager) reset() error {
+func (rm *RepoManager) reset() *errors.Error {
 	if err := rm.Run("git", "clean", "-fdx"); err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (rm *RepoManager) reset() error {
 }
 
 // CloneOrFetch either clones a new repository, or fetches from an existing origin.
-func (rm *RepoManager) CloneOrFetch(ctx context.Context, defaultBranch string) error {
+func (rm *RepoManager) CloneOrFetch(ctx context.Context, defaultBranch string) *errors.Error {
 	wf := rm.Logger.WithFields(log.FieldMap{"repo_name": rm.RepoName})
 
 	fi, err := os.Stat(rm.RepoPath)
@@ -193,7 +193,7 @@ func (rm *RepoManager) CloneOrFetch(ctx context.Context, defaultBranch string) e
 	if !fi.IsDir() {
 		wf.Errorf(ctx, "Repository path %v is a file; removing and re-cloning", rm.RepoName)
 		if err := os.Remove(rm.RepoPath); err != nil {
-			return err
+			return errors.New(err)
 		}
 		return rm.clone()
 	}
@@ -222,14 +222,14 @@ func (rm *RepoManager) CloneOrFetch(ctx context.Context, defaultBranch string) e
 }
 
 // AddOrFetchFork retrieves the fork's contents, or adds the fork as a remote, and then does that.
-func (rm *RepoManager) AddOrFetchFork() error {
+func (rm *RepoManager) AddOrFetchFork() *errors.Error {
 	// use normal exec.Command for this as we need to capture
 	cmd := exec.Command("git", "remote", "show") // #nosec
 	cmd.Dir = rm.RepoPath
 
 	out, err := cmd.Output()
 	if err != nil {
-		return err
+		return errors.New(err)
 	}
 
 	var added bool
@@ -252,7 +252,7 @@ func (rm *RepoManager) AddOrFetchFork() error {
 }
 
 // Checkout sets the working copy to the ref provided.
-func (rm *RepoManager) Checkout(ref string) error {
+func (rm *RepoManager) Checkout(ref string) *errors.Error {
 	if err := rm.Run("git", "checkout", ref); err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func (rm *RepoManager) Checkout(ref string) error {
 }
 
 // Rebase is similar to merge with rollback capability. Otherwise it's plain rebase.
-func (rm *RepoManager) Rebase(ref string) (retErr error) {
+func (rm *RepoManager) Rebase(ref string) (retErr *errors.Error) {
 	defer func() {
 		if retErr != nil {
 			io.WriteString(rm.Log, "rebase error; trying to roll back")
@@ -275,7 +275,7 @@ func (rm *RepoManager) Rebase(ref string) (retErr error) {
 }
 
 // Merge merges the ref into the currently checked out ref.
-func (rm *RepoManager) Merge(ref string) (retErr error) {
+func (rm *RepoManager) Merge(ref string) (retErr *errors.Error) {
 	defer func() {
 		if retErr != nil {
 			io.WriteString(rm.Log, "merge error; trying to roll back")
@@ -289,7 +289,7 @@ func (rm *RepoManager) Merge(ref string) (retErr error) {
 }
 
 // Run runs a command, piping output to the log.
-func (rm *RepoManager) Run(command ...string) error {
+func (rm *RepoManager) Run(command ...string) *errors.Error {
 	if err := rm.createLoginScript(); err != nil {
 		return err
 	}
@@ -303,11 +303,11 @@ func (rm *RepoManager) Run(command ...string) error {
 
 	tty, err := pty.Start(cmd)
 	if err != nil {
-		return err
+		return errors.New(err)
 	}
 	defer tty.Close()
 
 	go io.Copy(rm.Log, tty)
 
-	return cmd.Wait()
+	return errors.New(cmd.Wait())
 }
