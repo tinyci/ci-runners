@@ -87,8 +87,8 @@ func outputPullRead(w io.Writer, r io.Reader) error {
 	return nil
 }
 
-func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, error) {
-	img := r.QueueItem.Run.RunSettings.Image
+func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, *errors.Error) {
+	img := r.runCtx.QueueItem.Run.RunSettings.Image
 	if strings.Count(img, "/") <= 1 {
 		// probably a docker image, since there is no leading / for the hostname.
 		// Prefix it with the docker.io hostname.
@@ -102,20 +102,20 @@ func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, error
 	}
 
 	start := time.Now()
-	r.Logger.Debugf(context.Background(), "starting pull of image %v", img)
+	r.runner.LogsvcClient(r.runCtx).Debugf(context.Background(), "starting pull of image %v", img)
 
-	pullRead, err := client.ImagePull(r.Context, img, types.ImagePullOptions{})
+	pullRead, err := client.ImagePull(r.runCtx.Ctx, img, types.ImagePullOptions{})
 	if err != nil {
-		return "", err
+		return "", errors.New(err)
 	}
 	defer pullRead.Close()
 
 	if err := outputPullRead(pw, pullRead); err != nil {
-		r.Logger.Errorf(context.Background(), "pull of image %v failed with error: %v", img, err)
-		return "", err
+		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "pull of image %v failed with error: %v", img, err)
+		return "", errors.New(err)
 	}
 
-	r.Logger.Debugf(context.Background(), "pull of image %v succeeded in %v", img, time.Since(start))
+	r.runner.LogsvcClient(r.runCtx).Debugf(context.Background(), "pull of image %v succeeded in %v", img, time.Since(start))
 
 	return img, nil
 }
@@ -127,10 +127,10 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 		AttachStdout: true,
 		Tty:          true,
 		Image:        img,
-		WorkingDir:   r.QueueItem.Run.Task.TaskSettings.WorkDir,
+		WorkingDir:   r.runCtx.QueueItem.Run.Task.TaskSettings.WorkDir,
 		StopSignal:   "KILL",
-		Cmd:          r.QueueItem.Run.RunSettings.Command,
-		Env:          r.QueueItem.Run.Task.TaskSettings.Env,
+		Cmd:          r.runCtx.QueueItem.Run.RunSettings.Command,
+		Env:          r.runCtx.QueueItem.Run.Task.TaskSettings.Env,
 	}
 
 	hostconfig := &container.HostConfig{
@@ -138,78 +138,78 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 			{
 				Type:   mount.TypeBind,
 				Source: m.Target,
-				Target: r.QueueItem.Run.Task.TaskSettings.Mountpoint,
+				Target: r.runCtx.QueueItem.Run.Task.TaskSettings.Mountpoint,
 			},
 		},
 		AutoRemove: true,
 	}
 
-	client.ContainerRemove(r.Context, "running", types.ContainerRemoveOptions{Force: true})
+	client.ContainerRemove(r.runCtx.Ctx, "running", types.ContainerRemoveOptions{Force: true})
 
 	var outErr error
 
 	for i := 0; i < 5; i++ {
-		resp, err := client.ContainerCreate(r.Context, config, hostconfig, &network.NetworkingConfig{}, "running")
+		resp, err := client.ContainerCreate(r.runCtx.Ctx, config, hostconfig, &network.NetworkingConfig{}, "running")
 		if err != nil {
-			r.Logger.Errorf(context.Background(), "could not create container, retrying: %v", err)
+			r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not create container, retrying: %v", err)
 			outErr = err
 			time.Sleep(time.Second)
 			continue
 		}
 
-		r.ContainerID = resp.ID
+		r.containerID = resp.ID
 		outErr = nil
 		break
 	}
 
 	if outErr != nil {
-		r.Logger.Errorf(context.Background(), "could not create container, giving up: %v", outErr)
+		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not create container, giving up: %v", outErr)
 		return outErr
 	}
 
 	go func() {
 		for {
 			select {
-			case <-r.Context.Done():
+			case <-r.runCtx.Ctx.Done():
 				return
 			default:
 			}
 
-			attach, err := client.ContainerAttach(r.Context, r.ContainerID, types.ContainerAttachOptions{Stream: true, Stdin: true, Stdout: true, Stderr: true})
+			attach, err := client.ContainerAttach(r.runCtx.Ctx, r.containerID, types.ContainerAttachOptions{Stream: true, Stdin: true, Stdout: true, Stderr: true})
 			if err != nil {
 				attach.Close()
-				r.Logger.Errorf(context.Background(), "error during attach, trying re-attach soon: %v", err)
+				r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "error during attach, trying re-attach soon: %v", err)
 				time.Sleep(time.Second)
 				continue
 			}
 
 			io.Copy(pw, attach.Reader)
-			r.Logger.Debug(context.Background(), "attach closed; returning gracefully")
+			r.runner.LogsvcClient(r.runCtx).Debug(context.Background(), "attach closed; returning gracefully")
 			attach.Close()
 			return
 		}
 	}()
 
-	if err := client.ContainerStart(r.Context, r.ContainerID, types.ContainerStartOptions{}); err != nil {
-		r.Logger.Errorf(context.Background(), "could not start container: %v", err)
+	if err := client.ContainerStart(r.runCtx.Ctx, r.containerID, types.ContainerStartOptions{}); err != nil {
+		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not start container: %v", err)
 		return err
 	}
 
-	if err := client.ContainerResize(r.Context, r.ContainerID, types.ResizeOptions{Height: 25, Width: 80}); err != nil {
-		r.Logger.Errorf(context.Background(), "could not resize container's tty, skipping: %v", err)
+	if err := client.ContainerResize(r.runCtx.Ctx, r.containerID, types.ResizeOptions{Height: 25, Width: 80}); err != nil {
+		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not resize container's tty, skipping: %v", err)
 	}
 
 	return nil
 }
 
 // RunDocker runs the queue item in docker, pulling any necessary content to do so.
-func (r *Run) RunDocker() error {
+func (r *Run) RunDocker() (bool, *errors.Error) {
 	defer func() {
 		select {
-		case <-r.Context.Done():
+		case <-r.runCtx.Ctx.Done():
 			return // cancel func handler will do this
 		default:
-			r.Cancel()
+			r.runCtx.CancelFunc()
 		}
 	}()
 
@@ -221,57 +221,36 @@ func (r *Run) RunDocker() error {
 
 	gr, err := r.PullRepo(pw)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	m, err := r.MountRepo(gr)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer r.MountCleanup(m)
 
-	img, err := r.pullImage(r.Docker, pw)
+	img, err := r.pullImage(r.runner.Docker, pw)
 	if err != nil {
-		r.Logger.Errorf(context.Background(), "could not pull image: %v", err)
-		return err
+		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not pull image: %v", err)
+		return false, err
 	}
 
-	if err := r.boot(r.Docker, pw, img, m); err != nil {
-		r.Logger.Errorf(context.Background(), "could not boot container: %v", err)
-		return err
+	if err := r.boot(r.runner.Docker, pw, img, m); err != nil {
+		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not boot container: %v", err)
+		return false, errors.New(err)
 	}
 
-	return r.supervise(r.Docker, m)
+	return r.supervise(r.runner.Docker, m)
 }
 
-func (r *Run) supervise(client *client.Client, m *overlay.Mount) error {
-	defer time.Sleep(5 * time.Second) // work around a race in docker's deletion code
-	errChan := make(chan error, 1)
+func (r *Run) supervise(client *client.Client, m *overlay.Mount) (bool, *errors.Error) {
+	exit, waitErr := client.ContainerWait(r.runCtx.Ctx, r.containerID)
 
-	go func() {
-		<-r.Context.Done()
-
-		if err := client.ContainerRemove(context.Background(), r.ContainerID, types.ContainerRemoveOptions{Force: true}); err != nil {
-			errChan <- err
-		}
-	}()
-
-	exit, waitErr := client.ContainerWait(r.Context, r.ContainerID)
-
-	select {
-	case err := <-errChan: // there can be more than one error here, but we don't care
-		r.Logger.Errorf(context.Background(), "error with cleanup of cid %v: %v", r.ContainerID, err)
-		return err
-	default:
-		if waitErr != nil {
-			r.Logger.Errorf(context.Background(), "error waiting with cleanup of cid %v: %v", r.ContainerID, waitErr)
-			return errors.New(waitErr)
-		}
-
-		if exit == 0 {
-			r.Status = true
-		}
-
-		return nil
+	if waitErr != nil {
+		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "error waiting with cleanup of cid %v: %v", r.containerID, waitErr)
+		return false, errors.New(waitErr)
 	}
+
+	return exit == 0, nil
 }

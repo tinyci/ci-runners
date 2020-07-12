@@ -5,39 +5,49 @@ import (
 	"io"
 	"time"
 
-	"github.com/docker/docker/client"
-	"github.com/tinyci/ci-agents/clients/log"
+	"github.com/docker/docker/api/types"
 	"github.com/tinyci/ci-agents/errors"
-	"github.com/tinyci/ci-agents/model"
-	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
+	fwcontext "github.com/tinyci/ci-runners/fw/context"
 )
 
-// Run is the encapsulation of a CI run.
+// Run is a single run.
 type Run struct {
-	Logger      *log.SubLogger
-	QueueItem   *model.QueueItem
-	Config      *config.Config
-	ContainerID string
-	Status      bool
-	Context     context.Context
-	Cancel      context.CancelFunc
-	Docker      *client.Client
+	runner *Runner
+	runCtx *fwcontext.RunContext
+	name   string
+
+	containerID string
 }
 
-// NewRun constructs a new *Run.
-func NewRun(context context.Context, cancelFunc context.CancelFunc, qi *model.QueueItem, c *config.Config, logger *log.SubLogger, client *client.Client) (*Run, *errors.Error) {
-	if logger == nil {
-		logger = c.C.Clients.Log
-	}
+// Name is the name of the run
+func (r *Run) Name() string {
+	return r.name
+}
 
-	return &Run{
-		Docker:    client,
-		QueueItem: qi,
-		Config:    c,
-		Context:   context,
-		Cancel:    cancelFunc,
-		Logger:    logger,
-	}, nil
+func (r *Run) String() string {
+	return r.Name()
+}
+
+// RunContext returns the context for this run
+func (r *Run) RunContext() *fwcontext.RunContext {
+	return r.runCtx
+}
+
+// BeforeRun is executed before the next run is started.
+func (r *Run) BeforeRun() *errors.Error {
+	return nil
+}
+
+// Run runs the CI job.
+func (r *Run) Run() (bool, *errors.Error) {
+	return r.RunDocker()
+}
+
+// AfterRun is for after the run cleanup
+func (r *Run) AfterRun() *errors.Error {
+	// FIXME this fails sometimes, we'll classify the errors later. So much for "force".
+	r.runner.Docker.ContainerRemove(context.Background(), r.containerID, types.ContainerRemoveOptions{Force: true})
+	return nil
 }
 
 // StartCancelFunc launches a goroutine which waits for the cancel signal.
@@ -47,18 +57,18 @@ func (r *Run) StartCancelFunc() {
 	go func() {
 		for {
 			select {
-			case <-r.Context.Done():
+			case <-r.runCtx.Ctx.Done():
 				return
 			default:
 			}
 
-			state, err := r.Config.C.Clients.Queue.GetCancel(r.Context, r.QueueItem.Run.ID)
+			state, err := r.runner.Config.C.Clients.Queue.GetCancel(r.runCtx.Ctx, r.runCtx.QueueItem.Run.ID)
 			if err != nil || !state {
 				time.Sleep(time.Second)
 				continue
 			}
 
-			r.Cancel()
+			r.runCtx.CancelFunc()
 			return
 		}
 	}()
@@ -68,8 +78,8 @@ func (r *Run) StartCancelFunc() {
 // the log.
 func (r *Run) StartLogger(rc io.Reader) {
 	go func() {
-		if err := r.Config.C.Clients.Asset.Write(r.Context, r.QueueItem.Run.ID, rc); err != nil {
-			r.Logger.Error(r.Context, err.Wrapf("Writing log for Run ID %d", r.QueueItem.Run.ID))
+		if err := r.runner.Config.C.Clients.Asset.Write(r.runCtx.Ctx, r.runCtx.QueueItem.Run.ID, rc); err != nil {
+			r.runner.LogsvcClient(r.runCtx).Error(r.runCtx.Ctx, err.Wrapf("Writing log for Run ID %d", r.runCtx.QueueItem.Run.ID))
 		}
 	}()
 }

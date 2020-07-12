@@ -8,6 +8,7 @@ import (
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
 	"github.com/tinyci/ci-agents/errors"
+	"github.com/tinyci/ci-runners/fw"
 	fwConfig "github.com/tinyci/ci-runners/fw/config"
 	fwcontext "github.com/tinyci/ci-runners/fw/context"
 	"github.com/tinyci/ci-runners/runners/overlay-runner/config"
@@ -15,9 +16,17 @@ import (
 
 // Runner encapsulates an infinite lifecycle overlay-runner.
 type Runner struct {
-	Config     *config.Config
-	CurrentRun *Run
-	Docker     *client.Client
+	Config *config.Config
+	Docker *client.Client
+}
+
+// MakeRun makes a new run for the framework to use.
+func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, *errors.Error) {
+	return &Run{
+		runner: r,
+		name:   name,
+		runCtx: runCtx,
+	}, nil
 }
 
 // Init is the bootstrap of the runner.
@@ -50,23 +59,6 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 	r.Config.C.Clients.Log = r.Config.C.Clients.Log.WithFields(log.FieldMap{"hostname": r.Config.C.Hostname})
 
 	return nil
-}
-
-// BeforeRun is executed before the next run is started.
-func (r *Runner) BeforeRun(ctx *fwcontext.RunContext) *errors.Error {
-	var err *errors.Error
-	r.CurrentRun, err = NewRun(ctx.Ctx, ctx.CancelFunc, ctx.QueueItem, r.Config, r.LogsvcClient(ctx), r.Docker)
-	return err
-}
-
-// Run runs the CI job.
-func (r *Runner) Run(ctx *fwcontext.RunContext) (bool, *errors.Error) {
-	if err := r.CurrentRun.RunDocker(); err != nil {
-		r.LogsvcClient(ctx).Errorf(ctx.Ctx, "Run concluded with error: %v", err)
-	}
-
-	defer func() { r.CurrentRun = nil }()
-	return r.CurrentRun.Status, nil
 }
 
 // Hostname is the reported hostname of the machine; an identifier. Not

@@ -4,19 +4,52 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
 	"github.com/tinyci/ci-agents/errors"
+	"github.com/tinyci/ci-runners/fw"
 	"github.com/tinyci/ci-runners/fw/config"
 	fwcontext "github.com/tinyci/ci-runners/fw/context"
 )
 
 // Runner encapsulates an infinite lifecycle overlay-runner.
 type Runner struct {
+	sync.Mutex
 	Config    *config.Config
 	NextState bool
+}
+
+// Run is a single run
+type Run struct {
+	runner *Runner
+	name   string
+	runCtx *fwcontext.RunContext
+}
+
+// Name is the name of the run
+func (r *Run) Name() string {
+	return r.name
+}
+
+func (r *Run) String() string {
+	return r.Name()
+}
+
+// RunContext returns the context for this run
+func (r *Run) RunContext() *fwcontext.RunContext {
+	return r.runCtx
+}
+
+// MakeRun makes a new run for the framework to use.
+func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, *errors.Error) {
+	return &Run{
+		runner: r,
+		name:   name,
+		runCtx: runCtx,
+	}, nil
 }
 
 // Init is the bootstrap of the runner.
@@ -42,17 +75,24 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 }
 
 // BeforeRun is executed before the next run is started.
-func (r *Runner) BeforeRun(ctx *fwcontext.RunContext) *errors.Error {
-	r.NextState = rand.Intn(2) == 0
-	r.LogsvcClient(ctx).Infof(ctx.Ctx, "Run Commencing: Rolling the dice yielded %v - %v", r.NextState)
+func (r *Run) BeforeRun() *errors.Error {
+	r.runner.Lock()
+	defer r.runner.Unlock()
+	r.runner.NextState = rand.Intn(2) == 0
+	r.runner.LogsvcClient(r.runCtx).Infof(r.runCtx.Ctx, "Run Commencing: Rolling the dice yielded %v", r.runner.NextState)
 
 	return nil
 }
 
 // Run runs the CI job.
-func (r *Runner) Run(ctx *fwcontext.RunContext) (bool, *errors.Error) {
-	return r.NextState, nil
+func (r *Run) Run() (bool, *errors.Error) {
+	r.runner.Lock()
+	defer r.runner.Unlock()
+	return r.runner.NextState, nil
 }
+
+// AfterRun does nothing in the null-runner.
+func (r *Run) AfterRun() *errors.Error { return nil }
 
 // Hostname is the reported hostname of the machine; an identifier. Not
 // necessary for anything and insecure, just ornamental.
