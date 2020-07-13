@@ -14,7 +14,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/tinyci/ci-agents v0.2.7-0.20200710193514-df4509bbb9ec
+	github.com/tinyci/ci-agents v0.2.7-0.20200713062659-233f2ce89cf8
 	github.com/urfave/cli v1.22.4
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
