@@ -1,3 +1,9 @@
+## 0.2.7 -- Thu 16 Jul 2020 04:53:58 AM UTC
+
+- The runner framework now handles concurrency
+- k8s runner now in experimental availability
+- tinyci/runners image now being created
+
 ## 0.2.1 -- Wed Nov 05 22:49:56 PDT 2019
 
 - The runner framework would leak goroutines and channels during signal handling.
