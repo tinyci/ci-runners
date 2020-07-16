@@ -340,9 +340,12 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 
 		if !cancel {
 			if err := runner.QueueClient().SetStatus(ctx, qi.Run.ID, status); err != nil {
-				runLogger.Errorf(ctx, "Status report resulted in error: %v", err)
-				time.Sleep(time.Second)
-				goto normalRetry
+				// FIXME this should be a *constant*
+				if !err.Contains("status already set for run") {
+					runLogger.Errorf(ctx, "Status report resulted in error: %v", err)
+					time.Sleep(time.Second)
+					goto normalRetry
+				}
 			}
 		}
 
