@@ -326,13 +326,11 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 
 		status, err := run.Run()
 		if err != nil {
-			runLogger.Errorf(ctx, "Run concluded with FATAL ERROR: %v", err)
-			return
+			runLogger.Errorf(ctx, "Run concluded with error: %v", err)
 		}
 
 		if err := run.AfterRun(); err != nil {
-			runLogger.Errorf(ctx, "AfterRun hook failed with fatal error: %v", err)
-			return
+			runLogger.Errorf(ctx, "AfterRun hook failed with error: %v", err)
 		}
 
 	normalRetry:
