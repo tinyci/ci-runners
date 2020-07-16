@@ -12,7 +12,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/tinyci/ci-agents v0.2.7-0.20200713085737-d609563eb2b4
+	github.com/tinyci/ci-agents v0.2.7
 	github.com/tinyci/k8s-api v0.0.0-20200713103720-2891f14f1429
 	github.com/urfave/cli v1.22.4
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
