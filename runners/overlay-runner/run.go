@@ -47,6 +47,7 @@ func (r *Run) Run() (bool, *errors.Error) {
 func (r *Run) AfterRun() *errors.Error {
 	// FIXME this fails sometimes, we'll classify the errors later. So much for "force".
 	r.runner.Docker.ContainerRemove(context.Background(), r.containerID, types.ContainerRemoveOptions{Force: true})
+
 	return nil
 }
 

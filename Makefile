@@ -20,7 +20,7 @@ update-modules:
 dist:
 	rm -rf build
 	mkdir -p build
-	docker pull golang:latest
+	docker pull golang:${GO_VERSION}
 	docker run --rm \
 		-e GO111MODULE=on \
 		-e GOBIN=/tmp/bin \
@@ -32,3 +32,6 @@ dist:
 		golang:${GO_VERSION} \
 		go install -v ./...
 	tar cvzf release.tar.gz build/*
+
+dist-image: dist
+	box -t tinyci/runners:latest box-builds/box-dist.rb

@@ -43,6 +43,11 @@ func (r *Run) RunContext() *fwcontext.RunContext {
 	return r.runCtx
 }
 
+// Ready indicates the null runner is ready
+func (r *Runner) Ready() bool {
+	return true
+}
+
 // MakeRun makes a new run for the framework to use.
 func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, *errors.Error) {
 	return &Run{
@@ -51,6 +56,9 @@ func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, *er
 		runCtx: runCtx,
 	}, nil
 }
+
+// AfterRun does nothing in this runner.
+func (r *Runner) AfterRun(string, *fwcontext.RunContext) {}
 
 // Init is the bootstrap of the runner.
 func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
