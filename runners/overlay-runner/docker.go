@@ -135,6 +135,7 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 	}
 
 	hostconfig := &container.HostConfig{
+		Privileged: r.runCtx.QueueItem.Run.RunSettings.Privileged,
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
