@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/fatih/color"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/tinyci/ci-agents/errors"
 	"github.com/tinyci/ci-runners/fw/overlay"
 )
@@ -149,7 +150,7 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 	var outErr error
 
 	for i := 0; i < 5; i++ {
-		resp, err := client.ContainerCreate(r.runCtx.Ctx, config, hostconfig, &network.NetworkingConfig{}, "running")
+		resp, err := client.ContainerCreate(r.runCtx.Ctx, config, hostconfig, &network.NetworkingConfig{}, &v1.Platform{OS: "linux"}, "running")
 		if err != nil {
 			r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not create container, retrying: %v", err)
 			outErr = err
@@ -245,12 +246,13 @@ func (r *Run) RunDocker() (bool, *errors.Error) {
 }
 
 func (r *Run) supervise(client *client.Client, m *overlay.Mount) (bool, *errors.Error) {
-	exit, waitErr := client.ContainerWait(r.runCtx.Ctx, r.containerID)
+	exit, waitErr := client.ContainerWait(r.runCtx.Ctx, r.containerID, container.WaitConditionRemoved)
 
 	if waitErr != nil {
 		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "error waiting with cleanup of cid %v: %v", r.containerID, waitErr)
 		return false, errors.New(waitErr)
 	}
 
-	return exit == 0, nil
+	res := <-exit
+	return res.StatusCode == 0, nil
 }
