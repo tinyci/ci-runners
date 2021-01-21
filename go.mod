@@ -30,7 +30,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sirupsen/logrus v1.7.0 // indirect
-	github.com/tinyci/ci-agents v0.2.8-0.20210120141124-41fe212a990e
+	github.com/tinyci/ci-agents v0.2.8-0.20210120142617-469cf8a5ec99
 	github.com/tinyci/k8s-api v0.0.0-20200713103720-2891f14f1429
 	github.com/uber-go/atomic v1.4.0 // indirect
 	github.com/uber/jaeger-client-go v2.25.0+incompatible // indirect
