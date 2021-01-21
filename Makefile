@@ -1,4 +1,4 @@
-GO_VERSION ?= 1.14
+GO_VERSION ?= 1.15
 
 all:
 	go install -v ./...
