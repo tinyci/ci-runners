@@ -248,11 +248,11 @@ func (r *Run) RunDocker() (bool, *errors.Error) {
 func (r *Run) supervise(client *client.Client, m *overlay.Mount) (bool, *errors.Error) {
 	exit, waitErr := client.ContainerWait(r.runCtx.Ctx, r.containerID, container.WaitConditionRemoved)
 
-	if waitErr != nil {
-		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "error waiting with cleanup of cid %v: %v", r.containerID, waitErr)
-		return false, errors.New(waitErr)
+	select {
+	case res := <-exit:
+		return res.StatusCode == 0, nil
+	case err := <-waitErr:
+		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "error waiting with cleanup of cid %v: %v", r.containerID, err)
+		return false, errors.New(err)
 	}
-
-	res := <-exit
-	return res.StatusCode == 0, nil
 }
