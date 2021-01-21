@@ -851,6 +851,8 @@ github.com/tinyci/ci-agents v0.2.7 h1:JZULon3KjXYGJUQCgUQuN5n3TKQnR2CCtSRiAYp6z9
 github.com/tinyci/ci-agents v0.2.7/go.mod h1:Q9bkA3nZ0+1XBFeYcuu2NsL37MVDxUn5Q+hN8jX/v6Q=
 github.com/tinyci/ci-agents v0.2.8-0.20210120141124-41fe212a990e h1:ZRywhzX8mcw2L4GxpCn2W5z19qhqOzV4zdE8OTuFIGQ=
 github.com/tinyci/ci-agents v0.2.8-0.20210120141124-41fe212a990e/go.mod h1:7W3YDS2oED/u4HYYQZjXOogfGSXfKQn7g6nG/6q8Nvg=
+github.com/tinyci/ci-agents v0.2.8-0.20210120142617-469cf8a5ec99 h1:Lx8mGT7iw5miamfXzFqijvdYmrJsPYkKk8kK6X0IBPY=
+github.com/tinyci/ci-agents v0.2.8-0.20210120142617-469cf8a5ec99/go.mod h1:7W3YDS2oED/u4HYYQZjXOogfGSXfKQn7g6nG/6q8Nvg=
 github.com/tinyci/k8s-api v0.0.0-20200713091216-001915994613 h1:AQYWOSePnDgSW20jMMCFEM4vzlWOBhV56FsqX+0RuaE=
 github.com/tinyci/k8s-api v0.0.0-20200713091216-001915994613/go.mod h1:sgPp362bf7D2tmOMn4XR7sMHx0WXpmWebHXdIRW3OOI=
 github.com/tinyci/k8s-api v0.0.0-20200713092421-791fba700c30 h1:+JKfWtkNGUL1WOaxvA93L17T+I2ccZGu2UwDUp/GzsE=

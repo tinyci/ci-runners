@@ -109,6 +109,7 @@ func (r *Runner) LogsvcClient(ctx *fwcontext.RunContext) *log.SubLogger {
 			"parent":     ctx.QueueItem.Run.Task.Submission.BaseRef.Repository.Name,
 			"repository": ctx.QueueItem.Run.Task.Submission.HeadRef.Repository.Name,
 			"sha":        ctx.QueueItem.Run.Task.Submission.HeadRef.SHA,
+			"privileged": fmt.Sprintf("%v", ctx.QueueItem.Run.RunSettings.Privileged),
 		})
 	}
 
