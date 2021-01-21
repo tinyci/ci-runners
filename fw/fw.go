@@ -312,6 +312,8 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 
 	go func() {
 		defer func() {
+			runLogger.Infof(ctx, "Run finished in %v", time.Since(runnerCtx.Start))
+
 			e.runMapMutex.Lock()
 			delete(e.runMap, run)
 			e.runMapMutex.Unlock()
@@ -334,7 +336,13 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 		}
 
 	normalRetry:
-		cancel, _ := e.Launch.QueueClient().GetCancel(runnerCtx.Ctx, runnerCtx.QueueItem.Run.ID)
+		cancel, err := e.Launch.QueueClient().GetCancel(ctx, runnerCtx.QueueItem.Run.ID)
+		if err != nil {
+			runLogger.Errorf(ctx, "Cancel check resulted in error: %v", err)
+			time.Sleep(time.Second)
+
+			goto normalRetry
+		}
 
 		if !cancel {
 			if err := runner.QueueClient().SetStatus(ctx, qi.Run.ID, status); err != nil {
@@ -342,12 +350,11 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 				if !err.Contains("status already set for run") {
 					runLogger.Errorf(ctx, "Status report resulted in error: %v", err)
 					time.Sleep(time.Second)
+
 					goto normalRetry
 				}
 			}
 		}
-
-		runLogger.Infof(ctx, "Run finished in %v", time.Since(runnerCtx.Start))
 	}()
 
 	return nil
