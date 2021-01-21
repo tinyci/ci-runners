@@ -7,7 +7,7 @@ require (
 	github.com/apache/thrift v0.12.0 // indirect
 	github.com/containerd/containerd v1.4.3 // indirect
 	github.com/creack/pty v1.1.11
-	github.com/docker/docker v20.10.2+incompatible
+	github.com/docker/docker v17.12.0-ce-rc1.0.20201201034508-7d75c1d40d88+incompatible
 	github.com/erikh/migrator v0.0.0-20190428125507-88eb9a06f5e8 // indirect
 	github.com/fatih/color v1.10.0
 	github.com/fluxcd/source-controller v0.0.4 // indirect
