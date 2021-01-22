@@ -130,7 +130,7 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 		WorkingDir:   r.runCtx.QueueItem.Run.Task.TaskSettings.WorkDir,
 		StopSignal:   "KILL",
 		Cmd:          r.runCtx.QueueItem.Run.RunSettings.Command,
-		Env:          r.runCtx.QueueItem.Run.Task.TaskSettings.Env,
+		Env:          append(r.runCtx.QueueItem.Run.Task.TaskSettings.Env, r.runCtx.QueueItem.Run.RunSettings.Env...),
 	}
 
 	hostconfig := &container.HostConfig{
