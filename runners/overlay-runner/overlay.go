@@ -11,17 +11,17 @@ import (
 // MountRepo mounts the repo through overlayfs so we can quickly clean up the
 // build artifacts and other work done in the container.
 func (r *Run) MountRepo(gr *git.RepoManager) (*overlay.Mount, *errors.Error) {
-	work, err := ioutil.TempDir("", "")
+	work, err := ioutil.TempDir(r.runner.Config.OverlayTempdir, "")
 	if err != nil {
 		return nil, errors.New(err)
 	}
 
-	upper, err := ioutil.TempDir("", "")
+	upper, err := ioutil.TempDir(r.runner.Config.OverlayTempdir, "")
 	if err != nil {
 		return nil, errors.New(err)
 	}
 
-	target, err := ioutil.TempDir("", "")
+	target, err := ioutil.TempDir(r.runner.Config.OverlayTempdir, "")
 	if err != nil {
 		return nil, errors.New(err)
 	}
