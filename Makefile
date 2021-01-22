@@ -1,4 +1,4 @@
-GO_VERSION ?= 1.15
+GO_VERSION ?= 1.15-alpine
 
 all:
 	go install -v ./...
