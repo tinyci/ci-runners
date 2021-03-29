@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -89,18 +88,6 @@ func outputPullRead(w io.Writer, r io.Reader) error {
 
 func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, *errors.Error) {
 	img := r.runCtx.QueueItem.Run.RunSettings.Image
-	if strings.Count(img, "/") <= 1 {
-		// probably a docker image, since there is no leading / for the hostname.
-		// Prefix it with the docker.io hostname.
-		// FIXME maybe make this configurable later.
-
-		if strings.Count(img, "/") == 0 { // official docker image
-			img = fmt.Sprintf("library/%s", img)
-		}
-
-		img = fmt.Sprintf("docker.io/%s", img)
-	}
-
 	start := time.Now()
 	r.runner.LogsvcClient(r.runCtx).Debugf(context.Background(), "starting pull of image %v", img)
 
