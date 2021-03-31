@@ -90,6 +90,11 @@ func outputPullRead(w io.Writer, r io.Reader) error {
 	return nil
 }
 
+func (r *Run) mirrorLog(pw *io.PipeWriter, format string, args ...interface{}) {
+	color.New(color.FgHiRed, color.Bold).Fprintf(pw, "\r\nERROR: "+format+"\n", args...)
+	r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), format, args...)
+}
+
 func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, *errors.Error) {
 	img := r.runCtx.QueueItem.Run.RunSettings.Image
 	start := time.Now()
@@ -102,7 +107,7 @@ func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, *erro
 	defer pullRead.Close()
 
 	if err := outputPullRead(pw, pullRead); err != nil {
-		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "pull of image %v failed with error: %v", img, err)
+		r.mirrorLog(pw, "pull of image %v failed with error: %v", img, err)
 		return "", errors.New(err)
 	}
 
@@ -155,7 +160,7 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 	}
 
 	if outErr != nil {
-		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not create container, giving up: %v", outErr)
+		r.mirrorLog(pw, "could not create container, giving up: %v", outErr)
 		return outErr
 	}
 
@@ -170,7 +175,7 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 			attach, err := client.ContainerAttach(r.runCtx.Ctx, r.containerID, types.ContainerAttachOptions{Stream: true, Stdin: true, Stdout: true, Stderr: true})
 			if err != nil {
 				attach.Close()
-				r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "error during attach, trying re-attach soon: %v", err)
+				r.mirrorLog(pw, "error during attach, trying re-attach soon: %v", err)
 				time.Sleep(time.Second)
 				continue
 			}
@@ -183,12 +188,12 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 	}()
 
 	if err := client.ContainerStart(r.runCtx.Ctx, r.containerID, types.ContainerStartOptions{}); err != nil {
-		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not start container: %v", err)
+		r.mirrorLog(pw, "could not start container: %v", err)
 		return err
 	}
 
 	if err := client.ContainerResize(r.runCtx.Ctx, r.containerID, types.ResizeOptions{Height: 25, Width: 80}); err != nil {
-		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not resize container's tty, skipping: %v", err)
+		r.mirrorLog(pw, "could not resize container's tty, skipping: %v", err)
 	}
 
 	return nil
@@ -224,26 +229,26 @@ func (r *Run) RunDocker() (bool, *errors.Error) {
 
 	img, err := r.pullImage(r.runner.Docker, pw)
 	if err != nil {
-		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not pull image: %v", err)
+		r.mirrorLog(pw, "could not pull image: %v", err)
 		return false, err
 	}
 
 	if err := r.boot(r.runner.Docker, pw, img, m); err != nil {
-		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "could not boot container: %v", err)
+		r.mirrorLog(pw, "could not boot container: %v", err)
 		return false, errors.New(err)
 	}
 
-	return r.supervise(r.runner.Docker, m)
+	return r.supervise(r.runner.Docker, m, pw)
 }
 
-func (r *Run) supervise(client *client.Client, m *overlay.Mount) (bool, *errors.Error) {
+func (r *Run) supervise(client *client.Client, m *overlay.Mount, pw *io.PipeWriter) (bool, *errors.Error) {
 	exit, waitErr := client.ContainerWait(r.runCtx.Ctx, r.containerID, container.WaitConditionRemoved)
 
 	select {
 	case res := <-exit:
 		return res.StatusCode == 0, nil
 	case err := <-waitErr:
-		r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), "error waiting with cleanup of cid %v: %v", r.containerID, err)
+		r.mirrorLog(pw, "error waiting with cleanup of cid %v: %v", r.containerID, err)
 		return false, errors.New(err)
 	}
 }
