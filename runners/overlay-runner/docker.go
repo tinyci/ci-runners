@@ -91,8 +91,14 @@ func outputPullRead(w io.Writer, r io.Reader) error {
 }
 
 func (r *Run) mirrorLog(pw *io.PipeWriter, format string, args ...interface{}) {
-	color.New(color.FgHiRed, color.Bold).Fprintf(pw, "\r\nERROR: "+format+"\n", args...)
-	r.runner.LogsvcClient(r.runCtx).Errorf(context.Background(), format, args...)
+	r.runner.LogsvcClient(r.runCtx).Errorf(r.runCtx.Ctx, format, args...)
+
+	select {
+	case <-r.runCtx.Ctx.Done():
+		return
+	default:
+		color.New(color.FgHiRed, color.Bold).Fprintf(pw, "\r\nERROR: "+format+"\n", args...)
+	}
 }
 
 func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, *errors.Error) {
