@@ -2,6 +2,7 @@ package runner
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"path"
 	"strings"
@@ -49,9 +50,23 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, *errors.Error) {
 		return nil, err
 	}
 
-	if err := rm.CloneOrFetch(r.runCtx.Ctx, defaultBranchName); err != nil {
-		wf.Errorf(r.runCtx.Ctx, "Error cloning repo: %v", err)
-		return nil, err
+	mergeConfig := r.runCtx.QueueItem.Run.Task.TaskSettings.Config.Merge
+	doNotMerge := mergeConfig.DoNotMerge
+
+	if !doNotMerge {
+		fmt.Println(mergeConfig.IgnoreRefs)
+		for _, ref := range mergeConfig.IgnoreRefs {
+			if ref == r.runCtx.QueueItem.Run.Task.Submission.HeadRef.RefName {
+				doNotMerge = true
+			}
+		}
+	}
+
+	if !doNotMerge {
+		if err := rm.CloneOrFetch(r.runCtx.Ctx, defaultBranchName); err != nil {
+			wf.Errorf(r.runCtx.Ctx, "Error cloning repo: %v", err)
+			return nil, err
+		}
 	}
 
 	if err := rm.AddOrFetchFork(); err != nil {
@@ -64,9 +79,11 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, *errors.Error) {
 		return nil, err
 	}
 
-	if err := rm.Merge(path.Join("origin", defaultBranchName)); err != nil {
-		wf.Errorf(r.runCtx.Ctx, "Error merging master for %v: %v", r.runCtx.QueueItem.Run.Task.Submission.HeadRef.SHA, err)
-		return nil, err
+	if !doNotMerge {
+		if err := rm.Merge(path.Join("origin", defaultBranchName)); err != nil {
+			wf.Errorf(r.runCtx.Ctx, "Error merging master for %v: %v", r.runCtx.QueueItem.Run.Task.Submission.HeadRef.SHA, err)
+			return nil, err
+		}
 	}
 
 	return rm, nil
