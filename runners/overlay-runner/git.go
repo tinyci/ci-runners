@@ -60,11 +60,9 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, *errors.Error) {
 		}
 	}
 
-	if !doNotMerge {
-		if err := rm.CloneOrFetch(r.runCtx.Ctx, defaultBranchName); err != nil {
-			wf.Errorf(r.runCtx.Ctx, "Error cloning repo: %v", err)
-			return nil, err
-		}
+	if err := rm.CloneOrFetch(r.runCtx.Ctx, defaultBranchName); err != nil {
+		wf.Errorf(r.runCtx.Ctx, "Error cloning repo: %v", err)
+		return nil, err
 	}
 
 	if err := rm.AddOrFetchFork(); err != nil {
