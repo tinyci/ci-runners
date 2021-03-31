@@ -2,7 +2,6 @@ package runner
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"path"
 	"strings"
@@ -54,7 +53,6 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, *errors.Error) {
 	doNotMerge := mergeConfig.DoNotMerge
 
 	if !doNotMerge {
-		fmt.Println(mergeConfig.IgnoreRefs)
 		for _, ref := range mergeConfig.IgnoreRefs {
 			if ref == r.runCtx.QueueItem.Run.Task.Submission.HeadRef.RefName {
 				doNotMerge = true
