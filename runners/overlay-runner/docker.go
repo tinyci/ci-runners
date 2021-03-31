@@ -18,6 +18,10 @@ import (
 	"github.com/tinyci/ci-runners/fw/overlay"
 )
 
+func init() {
+	color.NoColor = false
+}
+
 func processLine(m map[string]interface{}, idMap map[string][]float64) bool {
 	var completed bool
 
