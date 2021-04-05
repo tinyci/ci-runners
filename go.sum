@@ -1213,6 +1213,8 @@ github.com/tinyci/ci-agents v0.2.8-0.20210122010616-34e931cae54e h1:6CJnllO/3o+y
 github.com/tinyci/ci-agents v0.2.8-0.20210122010616-34e931cae54e/go.mod h1:GD5JjaP00obiKLEs9GY58iCNGAkG+VuVsM6HqBwuwS4=
 github.com/tinyci/ci-agents v0.2.8-0.20210331012249-adb0a4ff1325 h1:lY3ret3YRRknMHJIMbLTivgRKmUNgwOhTz6Fh2bgT+Y=
 github.com/tinyci/ci-agents v0.2.8-0.20210331012249-adb0a4ff1325/go.mod h1:zBa/hi8Kp3mQLTL+ld1F8F/oYcWDkQPGYRsbV9vQPmg=
+github.com/tinyci/ci-agents v0.2.8-0.20210405045607-42ce0ca5eef8 h1:IBAC0RmZrfyGsKvrk3ts+gq0MpqBKC92iKM3yNrWgjw=
+github.com/tinyci/ci-agents v0.2.8-0.20210405045607-42ce0ca5eef8/go.mod h1:L77p018Cv1RkwdGMBWK5My7/pzI9y9LJc/nwP9a2+l8=
 github.com/tinyci/k8s-api v0.0.0-20200713103720-2891f14f1429 h1:rQ2/PJSnzPT1B2vvvcu1sVd68WZeQ6zeLZqPzZ9jAMU=
 github.com/tinyci/k8s-api v0.0.0-20200713103720-2891f14f1429/go.mod h1:sgPp362bf7D2tmOMn4XR7sMHx0WXpmWebHXdIRW3OOI=
 github.com/tinyci/k8s-api v0.0.0-20200716155442-5909a149e595 h1:zm28zWLIv/xr/aESGAFdVUTcS9XkuGJPtb+q9yVUlw0=
@@ -1732,6 +1734,8 @@ google.golang.org/genproto v0.0.0-20210119180700-e258113e47cc h1:tsmkSntchraIEmb
 google.golang.org/genproto v0.0.0-20210119180700-e258113e47cc/go.mod h1:FWY/as6DDZQgahTzZj3fqbO1CbirC29ZNUFHwi0/+no=
 google.golang.org/genproto v0.0.0-20210330181207-2295ebbda0c6 h1:F+kz69Q2lpqBTskKa73+uBMwi7PBQRQEUBqHt0oc1K8=
 google.golang.org/genproto v0.0.0-20210330181207-2295ebbda0c6/go.mod h1:9lPAdzaEmUacj36I+k7YKbEc5CXzPIeORRgDAUOu28A=
+google.golang.org/genproto v0.0.0-20210402141018-6c239bbf2bb1 h1:E7wSQBXkH3T3diucK+9Z1kjn4+/9tNG7lZLr75oOhh8=
+google.golang.org/genproto v0.0.0-20210402141018-6c239bbf2bb1/go.mod h1:9lPAdzaEmUacj36I+k7YKbEc5CXzPIeORRgDAUOu28A=
 google.golang.org/grpc v0.0.0-20160317175043-d3ddb4469d5a/go.mod h1:yo6s7OP7yaDglbqo1J04qKzAhqBH6lvTonzMVmEdcZw=
 google.golang.org/grpc v1.17.0/go.mod h1:6QZJwpn2B+Zp71q/5VxRsJ6NXXVCE5NRUHRo+f3cWCs=
 google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZiDr8c=

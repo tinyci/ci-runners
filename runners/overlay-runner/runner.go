@@ -8,7 +8,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
-	"github.com/tinyci/ci-agents/errors"
+	"github.com/tinyci/ci-agents/utils"
 	"github.com/tinyci/ci-runners/fw"
 	fwConfig "github.com/tinyci/ci-runners/fw/config"
 	fwcontext "github.com/tinyci/ci-runners/fw/context"
@@ -31,7 +31,7 @@ func (r *Runner) Ready() bool {
 }
 
 // MakeRun makes a new run for the framework to use.
-func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, *errors.Error) {
+func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, error) {
 	r.Lock()
 	defer r.Unlock()
 	r.running = true
@@ -51,7 +51,7 @@ func (r *Runner) AfterRun(name string, runCtx *fwcontext.RunContext) {
 }
 
 // Init is the bootstrap of the runner.
-func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
+func (r *Runner) Init(ctx *fwcontext.Context) error {
 	// we reload the clients on each run
 	r.Config = &config.Config{C: fwConfig.Config{Clients: &fwConfig.Clients{}}}
 	err := fwConfig.Load(ctx.CLIContext.GlobalString("config"), r.Config)
@@ -66,13 +66,13 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 	var eErr error
 	r.Docker, eErr = client.NewClientWithOpts(client.FromEnv)
 	if eErr != nil {
-		return errors.New(eErr)
+		return eErr
 	}
 
 	if r.Config.C.Hostname == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
-			return errors.New(err).Wrap("Could not retrieve hostname")
+			return utils.WrapError(err, "Could not retrieve hostname")
 		}
 		r.Config.C.Hostname = hostname
 	}

@@ -9,7 +9,7 @@ import (
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
-	"github.com/tinyci/ci-agents/errors"
+	"github.com/tinyci/ci-agents/utils"
 	"github.com/tinyci/ci-runners/fw"
 	"github.com/tinyci/ci-runners/fw/config"
 	fwcontext "github.com/tinyci/ci-runners/fw/context"
@@ -49,7 +49,7 @@ func (r *Runner) Ready() bool {
 }
 
 // MakeRun makes a new run for the framework to use.
-func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, *errors.Error) {
+func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, error) {
 	return &Run{
 		runner: r,
 		name:   name,
@@ -61,7 +61,7 @@ func (r *Runner) MakeRun(name string, runCtx *fwcontext.RunContext) (fw.Run, *er
 func (r *Runner) AfterRun(string, *fwcontext.RunContext) {}
 
 // Init is the bootstrap of the runner.
-func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
+func (r *Runner) Init(ctx *fwcontext.Context) error {
 	rand.Seed(time.Now().UnixNano())
 	// we reload the clients on each run
 	r.Config = &config.Config{Clients: &config.Clients{}}
@@ -73,7 +73,7 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 	if r.Config.Hostname == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
-			return errors.New(err).Wrap("Could not retrieve hostname")
+			return utils.WrapError(err, "Could not retrieve hostname")
 		}
 		r.Config.Hostname = hostname
 	}
@@ -83,7 +83,7 @@ func (r *Runner) Init(ctx *fwcontext.Context) *errors.Error {
 }
 
 // BeforeRun is executed before the next run is started.
-func (r *Run) BeforeRun() *errors.Error {
+func (r *Run) BeforeRun() error {
 	r.runner.Lock()
 	defer r.runner.Unlock()
 	r.runner.NextState = rand.Intn(2) == 0
@@ -93,14 +93,14 @@ func (r *Run) BeforeRun() *errors.Error {
 }
 
 // Run runs the CI job.
-func (r *Run) Run() (bool, *errors.Error) {
+func (r *Run) Run() (bool, error) {
 	r.runner.Lock()
 	defer r.runner.Unlock()
 	return r.runner.NextState, nil
 }
 
 // AfterRun does nothing in the null-runner.
-func (r *Run) AfterRun() *errors.Error { return nil }
+func (r *Run) AfterRun() error { return nil }
 
 // Hostname is the reported hostname of the machine; an identifier. Not
 // necessary for anything and insecure, just ornamental.

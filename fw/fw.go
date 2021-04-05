@@ -29,10 +29,11 @@ import (
 
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
-	"github.com/tinyci/ci-agents/errors"
 	fwcontext "github.com/tinyci/ci-runners/fw/context"
 	"github.com/urfave/cli"
 	"golang.org/x/sys/unix"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type runMap map[Run]*fwcontext.RunContext
@@ -43,11 +44,11 @@ type Runner interface {
 
 	// Init is the entrypoint of the runner application and will be run shortly
 	// after command line arguments are processed.
-	Init(*fwcontext.Context) *errors.Error
+	Init(*fwcontext.Context) error
 
 	// MakeRun allows the user to customize the run before returning it. See the
 	// `Run` interface.
-	MakeRun(string, *fwcontext.RunContext) (Run, *errors.Error)
+	MakeRun(string, *fwcontext.RunContext) (Run, error)
 
 	// AfterRun executes after the run has been completed.
 	AfterRun(string, *fwcontext.RunContext)
@@ -87,14 +88,14 @@ type Run interface {
 	//
 
 	// BeforeRun is executed to set up the run but not actually execute it.
-	BeforeRun() *errors.Error
+	BeforeRun() error
 
 	// Run is the actual running of the job. Errors from contexts are handled as
 	// cancellations. The status (pass/fail) is returned as the primary value.
-	Run() (bool, *errors.Error)
+	Run() (bool, error)
 
 	// AfterRun is executed after the run has completed.
-	AfterRun() *errors.Error
+	AfterRun() error
 }
 
 // Entrypoint is composed of boot-time entities used to start up the
@@ -256,7 +257,7 @@ func (e *Entrypoint) respondToCancelSignal(runnerCtx *fwcontext.RunContext) {
 	}
 }
 
-func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, baseContext *fwcontext.Context, runner Runner) *errors.Error {
+func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, baseContext *fwcontext.Context, runner Runner) error {
 	log := runner.LogsvcClient(&fwcontext.RunContext{Context: baseContext})
 
 	e.runMapMutex.RLock()
@@ -275,14 +276,17 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 
 	qi, err := runner.QueueClient().NextQueueItem(ctx, runner.QueueName(), runner.Hostname())
 	if err != nil {
-		if !err.Contains(errors.ErrNotFound) {
+		if stat, ok := status.FromError(err); ok && stat.Code() != codes.NotFound {
 			log.Errorf(ctx, "Error reading from queue: %v", err)
-		}
-		if err.Contains(context.Canceled) {
-			e.SetTerminate(log)
-		} else {
 			time.Sleep(time.Second)
 		}
+
+		select {
+		case <-ctx.Done():
+			e.SetTerminate(log)
+		default:
+		}
+
 		return nil
 	}
 
@@ -347,7 +351,7 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 		if !cancel {
 			if err := runner.QueueClient().SetStatus(ctx, qi.Run.ID, status); err != nil {
 				// FIXME this should be a *constant*
-				if !err.Contains("status already set for run") {
+				if !strings.Contains(err.Error(), "status already set for run") {
 					runLogger.Errorf(ctx, "Status report resulted in error: %v", err)
 					time.Sleep(time.Second)
 
