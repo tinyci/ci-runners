@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
-	"github.com/tinyci/ci-agents/errors"
+	"github.com/tinyci/ci-agents/utils"
 	fwcontext "github.com/tinyci/ci-runners/fw/context"
 )
 
@@ -34,17 +34,17 @@ func (r *Run) RunContext() *fwcontext.RunContext {
 }
 
 // BeforeRun is executed before the next run is started.
-func (r *Run) BeforeRun() *errors.Error {
+func (r *Run) BeforeRun() error {
 	return nil
 }
 
 // Run runs the CI job.
-func (r *Run) Run() (bool, *errors.Error) {
+func (r *Run) Run() (bool, error) {
 	return r.RunDocker()
 }
 
 // AfterRun is for after the run cleanup
-func (r *Run) AfterRun() *errors.Error {
+func (r *Run) AfterRun() error {
 	// FIXME this fails sometimes, we'll classify the errors later. So much for "force".
 	r.runner.Docker.ContainerRemove(context.Background(), r.containerID, types.ContainerRemoveOptions{Force: true})
 
@@ -80,7 +80,7 @@ func (r *Run) StartCancelFunc() {
 func (r *Run) StartLogger(rc io.Reader) {
 	go func() {
 		if err := r.runner.Config.C.Clients.Asset.Write(r.runCtx.Ctx, r.runCtx.QueueItem.Run.ID, rc); err != nil {
-			r.runner.LogsvcClient(r.runCtx).Error(r.runCtx.Ctx, err.Wrapf("Writing log for Run ID %d", r.runCtx.QueueItem.Run.ID))
+			r.runner.LogsvcClient(r.runCtx).Error(r.runCtx.Ctx, utils.WrapError(err, "Writing log for Run ID %d", r.runCtx.QueueItem.Run.ID))
 		}
 	}()
 }

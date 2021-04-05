@@ -14,7 +14,6 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/fatih/color"
-	"github.com/tinyci/ci-agents/errors"
 	"github.com/tinyci/ci-runners/fw/overlay"
 )
 
@@ -101,20 +100,20 @@ func (r *Run) mirrorLog(pw *io.PipeWriter, format string, args ...interface{}) {
 	}
 }
 
-func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, *errors.Error) {
+func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, error) {
 	img := r.runCtx.QueueItem.Run.RunSettings.Image
 	start := time.Now()
 	r.runner.LogsvcClient(r.runCtx).Debugf(context.Background(), "starting pull of image %v", img)
 
 	pullRead, err := client.ImagePull(r.runCtx.Ctx, img, types.ImagePullOptions{})
 	if err != nil {
-		return "", errors.New(err)
+		return "", err
 	}
 	defer pullRead.Close()
 
 	if err := outputPullRead(pw, pullRead); err != nil {
 		r.mirrorLog(pw, "pull of image %v failed with error: %v", img, err)
-		return "", errors.New(err)
+		return "", err
 	}
 
 	r.runner.LogsvcClient(r.runCtx).Debugf(context.Background(), "pull of image %v succeeded in %v", img, time.Since(start))
@@ -206,7 +205,7 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 }
 
 // RunDocker runs the queue item in docker, pulling any necessary content to do so.
-func (r *Run) RunDocker() (bool, *errors.Error) {
+func (r *Run) RunDocker() (bool, error) {
 	defer func() {
 		select {
 		case <-r.runCtx.Ctx.Done():
@@ -241,13 +240,13 @@ func (r *Run) RunDocker() (bool, *errors.Error) {
 
 	if err := r.boot(r.runner.Docker, pw, img, m); err != nil {
 		r.mirrorLog(pw, "could not boot container: %v", err)
-		return false, errors.New(err)
+		return false, err
 	}
 
 	return r.supervise(r.runner.Docker, m, pw)
 }
 
-func (r *Run) supervise(client *client.Client, m *overlay.Mount, pw *io.PipeWriter) (bool, *errors.Error) {
+func (r *Run) supervise(client *client.Client, m *overlay.Mount, pw *io.PipeWriter) (bool, error) {
 	exit, waitErr := client.ContainerWait(r.runCtx.Ctx, r.containerID, container.WaitConditionRemoved)
 
 	select {
@@ -255,6 +254,6 @@ func (r *Run) supervise(client *client.Client, m *overlay.Mount, pw *io.PipeWrit
 		return res.StatusCode == 0, nil
 	case err := <-waitErr:
 		r.mirrorLog(pw, "error waiting with cleanup of cid %v: %v", r.containerID, err)
-		return false, errors.New(err)
+		return false, err
 	}
 }

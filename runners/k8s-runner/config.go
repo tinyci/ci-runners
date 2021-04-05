@@ -2,9 +2,10 @@ package runner
 
 import (
 	"context"
+	"errors"
 
-	"github.com/tinyci/ci-agents/errors"
 	"github.com/tinyci/ci-agents/types"
+	"github.com/tinyci/ci-agents/utils"
 	fwConfig "github.com/tinyci/ci-runners/fw/config"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -32,7 +33,7 @@ func (c *Config) Config() *fwConfig.Config {
 // It is used to import the kubeconfig. If the kubeconfig is not specified, it
 // assumes it is running inside of kubernetes and attempts to get the
 // associated client credential.
-func (c *Config) ExtraLoad() *errors.Error {
+func (c *Config) ExtraLoad() error {
 	if c.MaxConcurrency == 0 {
 		c.C.Clients.Log.Info(context.Background(), "max_concurrency not set; defaulting to 1")
 		c.MaxConcurrency = 1
@@ -45,28 +46,28 @@ func (c *Config) ExtraLoad() *errors.Error {
 	var err error
 	if c.KubeConfig != "" {
 		c.k8s, err = clientcmd.BuildConfigFromFlags("", c.KubeConfig)
-		return errors.New(err)
+		return err
 	}
 
 	c.k8s, err = rest.InClusterConfig()
-	return errors.New(err)
+	return err
 }
 
 // Client retrieves a pre-built kubernetes client ready for use, or error.
-func (c *Config) Client() (*kubernetes.Clientset, *errors.Error) {
+func (c *Config) Client() (*kubernetes.Clientset, error) {
 	cs, err := kubernetes.NewForConfig(c.k8s)
 	if err != nil {
-		return nil, errors.New(err).Wrap("could not create scheme client")
+		return nil, utils.WrapError(err, "could not create scheme client")
 	}
 
 	return cs, nil
 }
 
 // SchemeClient returns a client prepped with the tinyCI API.
-func (c *Config) SchemeClient() (client.Client, *errors.Error) {
+func (c *Config) SchemeClient() (client.Client, error) {
 	cs, err := client.New(c.k8s, client.Options{Scheme: v1Scheme})
 	if err != nil {
-		return nil, errors.New(err).Wrap("could not create scheme client")
+		return nil, utils.WrapError(err, "could not create scheme client")
 	}
 
 	return cs, nil

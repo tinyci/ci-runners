@@ -7,22 +7,21 @@ import (
 	"strings"
 
 	"github.com/tinyci/ci-agents/clients/log"
-	"github.com/tinyci/ci-agents/errors"
 	"github.com/tinyci/ci-agents/types"
 	"github.com/tinyci/ci-runners/fw/git"
 )
 
-func jsonIO(from, to interface{}) *errors.Error {
+func jsonIO(from, to interface{}) error {
 	content, err := json.Marshal(from)
 	if err != nil {
-		return errors.New(err)
+		return err
 	}
 
-	return errors.New(json.Unmarshal(content, to))
+	return json.Unmarshal(content, to)
 }
 
 // PullRepo retrieves the repository and puts it in the right spot.
-func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, *errors.Error) {
+func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 	queueTok := r.runCtx.QueueItem.Run.Task.Submission.BaseRef.Repository.Owner.Token
 	tok := &types.OAuthToken{}
 

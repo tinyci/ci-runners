@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/tinyci/ci-agents/errors"
 	"github.com/tinyci/ci-runners/fw/config"
 	"github.com/tinyci/ci-runners/fw/git"
 )
@@ -19,6 +18,6 @@ func (c *Config) Config() *config.Config {
 }
 
 // ExtraLoad does nothing and satisfies the fw/config.Config interface
-func (c *Config) ExtraLoad() *errors.Error {
+func (c *Config) ExtraLoad() error {
 	return nil
 }

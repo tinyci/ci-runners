@@ -40,7 +40,6 @@ import (
 	"github.com/tinyci/ci-agents/clients/log"
 	"github.com/tinyci/ci-agents/clients/queue"
 	"github.com/tinyci/ci-agents/config"
-	"github.com/tinyci/ci-agents/errors"
 )
 
 // Configurator is a loose wrapper around configuration objects. The
@@ -57,7 +56,7 @@ type Configurator interface {
 	Config() *Config
 	// ExtraLoad is for doing any additional work that the framework does not
 	// prescribe already.
-	ExtraLoad() *errors.Error
+	ExtraLoad() error
 }
 
 // Config is the on-disk runner configuration
@@ -96,15 +95,15 @@ func (c *Config) Config() *Config {
 }
 
 // ExtraLoad does nothing for the basic configuration.
-func (c *Config) ExtraLoad() *errors.Error {
+func (c *Config) ExtraLoad() error {
 	return nil
 }
 
 // Load loads the runner configuration and configures clients -- logsvc,
 // queuesvc, and assetsvc clients with optional TLS settings.
-func Load(filename string, c Configurator) *errors.Error {
+func Load(filename string, c Configurator) error {
 	if err := config.Parse(filename, c); err != nil {
-		return errors.New(err)
+		return err
 	}
 
 	cfg := c.Config()

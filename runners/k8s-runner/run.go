@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/tinyci/ci-agents/clients/log"
-	"github.com/tinyci/ci-agents/errors"
+	"github.com/tinyci/ci-agents/utils"
 	fwcontext "github.com/tinyci/ci-runners/fw/context"
 	v1 "github.com/tinyci/k8s-api/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -41,12 +41,12 @@ func (r *Run) RunContext() *fwcontext.RunContext {
 }
 
 // BeforeRun is executed before the next run is started.
-func (r *Run) BeforeRun() *errors.Error {
+func (r *Run) BeforeRun() error {
 	return nil
 }
 
 // AfterRun is executed before the next run is started.
-func (r *Run) AfterRun() *errors.Error {
+func (r *Run) AfterRun() error {
 	return nil
 }
 
@@ -81,7 +81,7 @@ func (r *Run) copyLog(job *v1.CIJob) {
 	}
 }
 
-func (r *Run) makeResources() (corev1.ResourceList, *errors.Error) {
+func (r *Run) makeResources() (corev1.ResourceList, error) {
 	resourceList := corev1.ResourceList{}
 	resources := r.runCtx.QueueItem.Run.RunSettings.Resources
 
@@ -97,7 +97,7 @@ func (r *Run) makeResources() (corev1.ResourceList, *errors.Error) {
 
 			resourceList[resName], err = resource.ParseQuantity(res)
 			if err != nil {
-				return resourceList, errors.New(err).Wrapf("while trying to parse %q parameters", resName)
+				return resourceList, utils.WrapError(err, "while trying to parse %q parameters", resName)
 			}
 		}
 	}
@@ -105,12 +105,12 @@ func (r *Run) makeResources() (corev1.ResourceList, *errors.Error) {
 	return resourceList, nil
 }
 
-func (r *Run) cleanup(jobName types.NamespacedName, secret *corev1.Secret) *errors.Error {
+func (r *Run) cleanup(jobName types.NamespacedName, secret *corev1.Secret) error {
 	r.logger.Infof(context.Background(), "Cleanup of completed job %q (secretName: %q) commencing", jobName, secret.Name)
 
 	c, err := r.runner.Config.SchemeClient()
 	if err != nil {
-		return errors.New(err)
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -120,19 +120,19 @@ func (r *Run) cleanup(jobName types.NamespacedName, secret *corev1.Secret) *erro
 
 	if err := c.Get(ctx, jobName, job); err == nil {
 		if err := c.Delete(ctx, job); err != nil {
-			return errors.New(err)
+			return err
 		}
 	}
 
 	if err := c.Delete(ctx, secret); err != nil {
-		return errors.New(err)
+		return err
 	}
 
 	return nil
 }
 
 // Run runs the CI job.
-func (r *Run) Run() (bool, *errors.Error) {
+func (r *Run) Run() (bool, error) {
 	sub := r.runCtx.QueueItem.Run.Task.Submission
 
 	jobName := fmt.Sprintf("%s-%d", r.runCtx.QueueItem.QueueName, r.runCtx.QueueItem.ID)
@@ -145,7 +145,7 @@ func (r *Run) Run() (bool, *errors.Error) {
 
 	resourceList, err := r.makeResources()
 	if err != nil {
-		return false, err.Wrap("could not parse resources")
+		return false, utils.WrapError(err, "could not parse resources")
 	}
 
 	jobSpec := v1.CIJobSpec{
@@ -183,15 +183,15 @@ func (r *Run) Run() (bool, *errors.Error) {
 
 	c, err := r.runner.Config.SchemeClient()
 	if err != nil {
-		return false, errors.New(err)
+		return false, err
 	}
 
 	if err := c.Create(r.ctx, secret); err != nil {
-		return false, errors.New(err)
+		return false, err
 	}
 
 	if err := c.Create(r.ctx, job); err != nil {
-		return false, errors.New(err)
+		return false, err
 	}
 
 	nsName := types.NamespacedName{Namespace: r.runner.Config.Namespace, Name: jobName}
@@ -215,7 +215,7 @@ func (r *Run) Run() (bool, *errors.Error) {
 		job := &v1.CIJob{}
 
 		if err := c.Get(context.Background(), nsName, job); err != nil {
-			return false, errors.New(err)
+			return false, err
 		}
 
 		if job.Status.PodName == "" && !job.Status.Canceled && !job.Status.Finished {

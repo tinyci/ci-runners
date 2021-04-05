@@ -26,6 +26,7 @@ package git
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -36,7 +37,6 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/tinyci/ci-agents/clients/log"
-	"github.com/tinyci/ci-agents/errors"
 )
 
 // RepoManager manages a series of repositories. Call Init() before using it.
@@ -68,7 +68,7 @@ type RepoManager struct {
 	ForkRemote string
 }
 
-func systemInit() *errors.Error {
+func systemInit() error {
 	home := os.Getenv("HOME")
 
 	if home == "" {
@@ -80,12 +80,12 @@ func systemInit() *errors.Error {
 
 		// #nosec
 		if err := exec.Command("git", "config", "--global", "--add", "user.name", defaultGitUserName).Run(); err != nil {
-			errors.Errorf("While updating git configuration: %v", err)
+			return fmt.Errorf("While updating git configuration: %w", err)
 		}
 
 		// #nosec
 		if err := exec.Command("git", "config", "--global", "--add", "user.email", defaultGitEmail).Run(); err != nil {
-			errors.Errorf("While updating git configuration: %v", err)
+			return fmt.Errorf("While updating git configuration: %w", err)
 		}
 	}
 
@@ -93,7 +93,7 @@ func systemInit() *errors.Error {
 }
 
 // Init initializes the repomanager for use. Must be called before using other functions.
-func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRepoName string) *errors.Error {
+func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRepoName string) error {
 	if err := systemInit(); err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (rm *RepoManager) Init(config Config, log *log.SubLogger, repoName, forkRep
 	return nil
 }
 
-func (rm *RepoManager) validateRepoName(repoName string) *errors.Error {
+func (rm *RepoManager) validateRepoName(repoName string) error {
 	if strings.Count(repoName, "/") != 1 {
 		return errors.New("missing partition between owner and repository")
 	}
@@ -132,10 +132,10 @@ func (rm *RepoManager) validateRepoName(repoName string) *errors.Error {
 // CreateLoginScript creates a login script to be used by GIT_ASKPASS git
 // credentials functionality. It merely contains `echo <token>` which is enough
 // to get us in.
-func (rm *RepoManager) createLoginScript() *errors.Error {
+func (rm *RepoManager) createLoginScript() error {
 	f, err := os.Create(rm.Config.LoginScriptPath)
 	if err != nil {
-		return errors.New(err)
+		return err
 	}
 	defer f.Close()
 
@@ -145,25 +145,25 @@ func (rm *RepoManager) createLoginScript() *errors.Error {
 echo %q
 `, rm.AccessToken))
 	if err != nil {
-		return errors.New(err)
+		return err
 	}
 
-	return errors.New(os.Chmod(f.Name(), 0700)) // #nosec
+	return os.Chmod(f.Name(), 0700) // #nosec
 }
 
-func (rm *RepoManager) removeLoginScript() *errors.Error {
-	return errors.New(os.Remove(rm.Config.LoginScriptPath))
+func (rm *RepoManager) removeLoginScript() error {
+	return os.Remove(rm.Config.LoginScriptPath)
 }
 
-func (rm *RepoManager) clone() *errors.Error {
+func (rm *RepoManager) clone() error {
 	if err := os.MkdirAll(rm.RepoPath, 0700); err != nil {
-		return errors.New(err)
+		return err
 	}
 
 	return rm.Run("git", "clone", fmt.Sprintf("https://github.com/%s", rm.RepoName), ".")
 }
 
-func (rm *RepoManager) fetch(remote string, pull bool) *errors.Error {
+func (rm *RepoManager) fetch(remote string, pull bool) error {
 	verb := "fetch"
 	if pull {
 		verb = "pull"
@@ -172,7 +172,7 @@ func (rm *RepoManager) fetch(remote string, pull bool) *errors.Error {
 	return rm.Run("git", verb, remote)
 }
 
-func (rm *RepoManager) reset() *errors.Error {
+func (rm *RepoManager) reset() error {
 	if err := rm.Run("git", "clean", "-fdx"); err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (rm *RepoManager) reset() *errors.Error {
 }
 
 // CloneOrFetch either clones a new repository, or fetches from an existing origin.
-func (rm *RepoManager) CloneOrFetch(ctx context.Context, defaultBranch string) *errors.Error {
+func (rm *RepoManager) CloneOrFetch(ctx context.Context, defaultBranch string) error {
 	wf := rm.Logger.WithFields(log.FieldMap{"repo_name": rm.RepoName})
 
 	fi, err := os.Stat(rm.RepoPath)
@@ -193,7 +193,7 @@ func (rm *RepoManager) CloneOrFetch(ctx context.Context, defaultBranch string) *
 	if !fi.IsDir() {
 		wf.Errorf(ctx, "Repository path %v is a file; removing and re-cloning", rm.RepoName)
 		if err := os.Remove(rm.RepoPath); err != nil {
-			return errors.New(err)
+			return err
 		}
 		return rm.clone()
 	}
@@ -222,14 +222,14 @@ func (rm *RepoManager) CloneOrFetch(ctx context.Context, defaultBranch string) *
 }
 
 // AddOrFetchFork retrieves the fork's contents, or adds the fork as a remote, and then does that.
-func (rm *RepoManager) AddOrFetchFork() *errors.Error {
+func (rm *RepoManager) AddOrFetchFork() error {
 	// use normal exec.Command for this as we need to capture
 	cmd := exec.Command("git", "remote", "show") // #nosec
 	cmd.Dir = rm.RepoPath
 
 	out, err := cmd.Output()
 	if err != nil {
-		return errors.New(err)
+		return err
 	}
 
 	var added bool
@@ -252,7 +252,7 @@ func (rm *RepoManager) AddOrFetchFork() *errors.Error {
 }
 
 // Checkout sets the working copy to the ref provided.
-func (rm *RepoManager) Checkout(ref string) *errors.Error {
+func (rm *RepoManager) Checkout(ref string) error {
 	if err := rm.Run("git", "checkout", ref); err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func (rm *RepoManager) Checkout(ref string) *errors.Error {
 }
 
 // Rebase is similar to merge with rollback capability. Otherwise it's plain rebase.
-func (rm *RepoManager) Rebase(ref string) (retErr *errors.Error) {
+func (rm *RepoManager) Rebase(ref string) (retErr error) {
 	defer func() {
 		if retErr != nil {
 			io.WriteString(rm.Log, "rebase error; trying to roll back")
@@ -275,7 +275,7 @@ func (rm *RepoManager) Rebase(ref string) (retErr *errors.Error) {
 }
 
 // Merge merges the ref into the currently checked out ref.
-func (rm *RepoManager) Merge(ref string) (retErr *errors.Error) {
+func (rm *RepoManager) Merge(ref string) (retErr error) {
 	defer func() {
 		if retErr != nil {
 			io.WriteString(rm.Log, "merge error; trying to roll back")
@@ -289,7 +289,7 @@ func (rm *RepoManager) Merge(ref string) (retErr *errors.Error) {
 }
 
 // Run runs a command, piping output to the log.
-func (rm *RepoManager) Run(command ...string) *errors.Error {
+func (rm *RepoManager) Run(command ...string) error {
 	if err := rm.createLoginScript(); err != nil {
 		return err
 	}
@@ -303,11 +303,11 @@ func (rm *RepoManager) Run(command ...string) *errors.Error {
 
 	tty, err := pty.Start(cmd)
 	if err != nil {
-		return errors.New(err)
+		return err
 	}
 	defer tty.Close()
 
 	go io.Copy(rm.Log, tty)
 
-	return errors.New(cmd.Wait())
+	return cmd.Wait()
 }

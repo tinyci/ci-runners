@@ -1,9 +1,8 @@
 package git
 
 import (
+	"errors"
 	"path/filepath"
-
-	"github.com/tinyci/ci-agents/errors"
 )
 
 const (
@@ -24,7 +23,7 @@ type Config struct {
 
 // Validate corrects or errors out when the configuration doesn't match
 // expectations.
-func (rc *Config) Validate() *errors.Error {
+func (rc *Config) Validate() error {
 	if rc.LoginScriptPath == "" {
 		rc.LoginScriptPath = defaultLoginScriptPath
 	}

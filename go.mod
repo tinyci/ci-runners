@@ -22,13 +22,14 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/openshift/osin v1.0.1 // indirect
 	github.com/openzipkin/zipkin-go v0.1.6 // indirect
-	github.com/tinyci/ci-agents v0.2.8-0.20210331012249-adb0a4ff1325
+	github.com/tinyci/ci-agents v0.2.8-0.20210405045607-42ce0ca5eef8
 	github.com/tinyci/k8s-api v0.0.0-20200716155442-5909a149e595
 	github.com/uber-go/atomic v1.4.0 // indirect
 	github.com/urfave/cli v1.22.5
 	golang.org/x/net v0.0.0-20210330230544-e57232859fb2 // indirect
 	golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
+	google.golang.org/grpc v1.36.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	k8s.io/api v0.20.5
 	k8s.io/apimachinery v0.20.5
