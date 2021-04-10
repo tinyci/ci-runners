@@ -160,7 +160,11 @@ func (rm *RepoManager) clone() error {
 		return err
 	}
 
-	return rm.Run("git", "clone", fmt.Sprintf("https://github.com/%s", rm.RepoName), ".")
+	if err := rm.Run("git", "clone", fmt.Sprintf("https://github.com/%s", rm.RepoName), "."); err != nil {
+		return err
+	}
+
+	return rm.Run("git", "config", "--add", "advice.detachedHead", "false")
 }
 
 func (rm *RepoManager) fetch(remote string, pull bool) error {
