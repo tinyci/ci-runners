@@ -276,6 +276,10 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 
 	qi, err := runner.QueueClient().NextQueueItem(ctx, runner.QueueName(), runner.Hostname())
 	if err != nil {
+		if stat, ok := status.FromError(err); ok && stat.Code() == codes.NotFound {
+			return nil
+		}
+
 		if stat, ok := status.FromError(err); ok && stat.Code() != codes.NotFound {
 			log.Errorf(ctx, "Error reading from queue: %v", err)
 			time.Sleep(time.Second)
