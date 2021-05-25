@@ -22,7 +22,7 @@ func jsonIO(from, to interface{}) error {
 
 // PullRepo retrieves the repository and puts it in the right spot.
 func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
-	queueTok := r.runCtx.QueueItem.Run.Task.Submission.BaseRef.Repository.Owner.Token
+	queueTok := r.runCtx.QueueItem.Run.Task.Submission.BaseRef.Repository.Owner.TokenJSON
 	tok := &types.OAuthToken{}
 
 	if err := jsonIO(queueTok, tok); err != nil {
@@ -48,7 +48,7 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 		return nil, err
 	}
 
-	mergeConfig := r.runCtx.QueueItem.Run.Task.TaskSettings.Config.Merge
+	mergeConfig := r.runCtx.QueueItem.Run.Task.Settings.Config.MergeOptions
 	doNotMerge := mergeConfig.DoNotMerge
 
 	if !doNotMerge {
@@ -69,14 +69,14 @@ func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 		return nil, err
 	}
 
-	if err := rm.Checkout(r.runCtx.QueueItem.Run.Task.Submission.HeadRef.SHA); err != nil {
-		wf.Errorf(r.runCtx.Ctx, "Error checking out %v: %v", r.runCtx.QueueItem.Run.Task.Submission.HeadRef.SHA, err)
+	if err := rm.Checkout(r.runCtx.QueueItem.Run.Task.Submission.HeadRef.Sha); err != nil {
+		wf.Errorf(r.runCtx.Ctx, "Error checking out %v: %v", r.runCtx.QueueItem.Run.Task.Submission.HeadRef.Sha, err)
 		return nil, err
 	}
 
 	if !doNotMerge {
 		if err := rm.Merge(path.Join("origin", defaultBranchName)); err != nil {
-			wf.Errorf(r.runCtx.Ctx, "Error merging master for %v: %v", r.runCtx.QueueItem.Run.Task.Submission.HeadRef.SHA, err)
+			wf.Errorf(r.runCtx.Ctx, "Error merging master for %v: %v", r.runCtx.QueueItem.Run.Task.Submission.HeadRef.Sha, err)
 			return nil, err
 		}
 	}

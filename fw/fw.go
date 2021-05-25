@@ -223,7 +223,7 @@ func (e *Entrypoint) makeGracefulRestartSignal(lifetimeCancel context.CancelFunc
 func (e *Entrypoint) processCancel(ctx context.Context, runnerCtx *fwcontext.RunContext, runner Runner) bool {
 retry:
 	runLogger := runner.LogsvcClient(runnerCtx)
-	didCancel, err := runner.QueueClient().GetCancel(ctx, runnerCtx.QueueItem.Run.ID)
+	didCancel, err := runner.QueueClient().GetCancel(ctx, runnerCtx.QueueItem.Run.Id)
 	if err != nil {
 		runLogger.Errorf(ctx, "Cannot retrieve cancel state of current job, retrying in 1s: %v\n", err)
 		time.Sleep(time.Second)
@@ -231,7 +231,7 @@ retry:
 
 	if !didCancel {
 		runLogger.Info(ctx, "Canceling run")
-		if err := runner.QueueClient().SetCancel(context.Background(), runnerCtx.QueueItem.Run.ID); err != nil {
+		if err := runner.QueueClient().SetCancel(context.Background(), runnerCtx.QueueItem.Run.Id); err != nil {
 			runLogger.Errorf(ctx, "Cannot cancel current job, retrying in 1s: %+v\n", err)
 			time.Sleep(time.Second)
 		}
@@ -248,7 +248,7 @@ func (e *Entrypoint) respondToCancelSignal(runnerCtx *fwcontext.RunContext) {
 		case <-runnerCtx.Ctx.Done():
 			return
 		default:
-			cancel, _ := e.Launch.QueueClient().GetCancel(runnerCtx.Ctx, runnerCtx.QueueItem.Run.ID)
+			cancel, _ := e.Launch.QueueClient().GetCancel(runnerCtx.Ctx, runnerCtx.QueueItem.Run.Id)
 			if cancel && runnerCtx.CancelFunc != nil {
 				runnerCtx.CancelFunc()
 			}
@@ -297,15 +297,15 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 	runnerCtx := &fwcontext.RunContext{QueueItem: qi, Start: time.Now(), Context: baseContext}
 	runLogger := runner.LogsvcClient(runnerCtx)
 	runLogger.Info(ctx, "Received run data; commencing with test")
-	timeout := qi.Run.RunSettings.Timeout
+	timeout := qi.Run.Settings.Timeout
 
 	if timeout == 0 {
 		runnerCtx.Ctx, runnerCtx.CancelFunc = context.WithCancel(context.Background())
 	} else {
-		runnerCtx.Ctx, runnerCtx.CancelFunc = context.WithTimeout(context.Background(), qi.Run.RunSettings.Timeout)
+		runnerCtx.Ctx, runnerCtx.CancelFunc = context.WithTimeout(context.Background(), time.Duration(qi.Run.Settings.Timeout))
 	}
 
-	runName := strings.Join([]string{runner.QueueName(), fmt.Sprintf("%d", qi.Run.ID)}, ".")
+	runName := strings.Join([]string{runner.QueueName(), fmt.Sprintf("%d", qi.Run.Id)}, ".")
 
 	run, err := runner.MakeRun(runName, runnerCtx)
 	if err != nil {
@@ -344,7 +344,7 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 		}
 
 	normalRetry:
-		cancel, err := e.Launch.QueueClient().GetCancel(ctx, runnerCtx.QueueItem.Run.ID)
+		cancel, err := e.Launch.QueueClient().GetCancel(ctx, runnerCtx.QueueItem.Run.Id)
 		if err != nil {
 			runLogger.Errorf(ctx, "Cancel check resulted in error: %v", err)
 			time.Sleep(time.Second)
@@ -353,7 +353,7 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 		}
 
 		if !cancel {
-			if err := runner.QueueClient().SetStatus(ctx, qi.Run.ID, status); err != nil {
+			if err := runner.QueueClient().SetStatus(ctx, qi.Run.Id, status); err != nil {
 				// FIXME this should be a *constant*
 				if !strings.Contains(err.Error(), "status already set for run") {
 					runLogger.Errorf(ctx, "Status report resulted in error: %v", err)

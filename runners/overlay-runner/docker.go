@@ -101,7 +101,7 @@ func (r *Run) mirrorLog(pw *io.PipeWriter, format string, args ...interface{}) {
 }
 
 func (r *Run) pullImage(client *client.Client, pw *io.PipeWriter) (string, error) {
-	img := r.runCtx.QueueItem.Run.RunSettings.Image
+	img := r.runCtx.QueueItem.Run.Settings.Image
 	start := time.Now()
 	r.runner.LogsvcClient(r.runCtx).Debugf(context.Background(), "starting pull of image %v", img)
 
@@ -128,19 +128,19 @@ func (r *Run) boot(client *client.Client, pw *io.PipeWriter, img string, m *over
 		AttachStdout: true,
 		Tty:          true,
 		Image:        img,
-		WorkingDir:   r.runCtx.QueueItem.Run.Task.TaskSettings.WorkDir,
+		WorkingDir:   r.runCtx.QueueItem.Run.Task.Settings.Workdir,
 		StopSignal:   "KILL",
-		Cmd:          r.runCtx.QueueItem.Run.RunSettings.Command,
-		Env:          append(r.runCtx.QueueItem.Run.Task.TaskSettings.Env, r.runCtx.QueueItem.Run.RunSettings.Env...),
+		Cmd:          r.runCtx.QueueItem.Run.Settings.Command,
+		Env:          append(r.runCtx.QueueItem.Run.Task.Settings.Env, r.runCtx.QueueItem.Run.Settings.Env...),
 	}
 
 	hostconfig := &container.HostConfig{
-		Privileged: r.runCtx.QueueItem.Run.RunSettings.Privileged,
+		Privileged: r.runCtx.QueueItem.Run.Settings.Privileged,
 		Mounts: []mount.Mount{
 			{
 				Type:   mount.TypeBind,
 				Source: m.Target,
-				Target: r.runCtx.QueueItem.Run.Task.TaskSettings.Mountpoint,
+				Target: r.runCtx.QueueItem.Run.Task.Settings.Mountpoint,
 			},
 		},
 		AutoRemove: true,

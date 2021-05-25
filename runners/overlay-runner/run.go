@@ -63,7 +63,7 @@ func (r *Run) StartCancelFunc() {
 			default:
 			}
 
-			state, err := r.runner.Config.C.Clients.Queue.GetCancel(r.runCtx.Ctx, r.runCtx.QueueItem.Run.ID)
+			state, err := r.runner.Config.C.Clients.Queue.GetCancel(r.runCtx.Ctx, r.runCtx.QueueItem.Run.Id)
 			if err != nil || !state {
 				time.Sleep(time.Second)
 				continue
@@ -79,8 +79,8 @@ func (r *Run) StartCancelFunc() {
 // the log.
 func (r *Run) StartLogger(rc io.Reader) {
 	go func() {
-		if err := r.runner.Config.C.Clients.Asset.Write(r.runCtx.Ctx, r.runCtx.QueueItem.Run.ID, rc); err != nil {
-			r.runner.LogsvcClient(r.runCtx).Error(r.runCtx.Ctx, utils.WrapError(err, "Writing log for Run ID %d", r.runCtx.QueueItem.Run.ID))
+		if err := r.runner.Config.C.Clients.Asset.Write(r.runCtx.Ctx, r.runCtx.QueueItem.Run.Id, rc); err != nil {
+			r.runner.LogsvcClient(r.runCtx).Error(r.runCtx.Ctx, utils.WrapError(err, "Writing log for Run ID %d", r.runCtx.QueueItem.Run.Id))
 		}
 	}()
 }
