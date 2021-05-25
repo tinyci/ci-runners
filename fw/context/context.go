@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/tinyci/ci-agents/model"
+	"github.com/tinyci/ci-agents/ci-gen/grpc/types"
 	"github.com/urfave/cli"
 )
 
@@ -25,7 +25,7 @@ type RunContext struct {
 	*Context
 
 	// QueueItem is the item of the upcoming run; used in BeforeNextRun() and Run()
-	QueueItem *model.QueueItem
+	QueueItem *types.QueueItem
 	// RunStart is the time the run started. Populated only for Run().
 	Start time.Time
 	// RunCtx is the context.Context for the run; if closed the run should be canceled.

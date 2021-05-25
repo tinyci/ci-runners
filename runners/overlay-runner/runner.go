@@ -104,12 +104,12 @@ func (r *Runner) LogsvcClient(ctx *fwcontext.RunContext) *log.SubLogger {
 
 	if ctx.QueueItem != nil {
 		return logger.WithFields(log.FieldMap{
-			"run_id":     fmt.Sprintf("%v", ctx.QueueItem.Run.ID),
-			"task_id":    fmt.Sprintf("%v", ctx.QueueItem.Run.Task.ID),
+			"run_id":     fmt.Sprintf("%v", ctx.QueueItem.Run.Id),
+			"task_id":    fmt.Sprintf("%v", ctx.QueueItem.Run.Task.Id),
 			"parent":     ctx.QueueItem.Run.Task.Submission.BaseRef.Repository.Name,
 			"repository": ctx.QueueItem.Run.Task.Submission.HeadRef.Repository.Name,
-			"sha":        ctx.QueueItem.Run.Task.Submission.HeadRef.SHA,
-			"privileged": fmt.Sprintf("%v", ctx.QueueItem.Run.RunSettings.Privileged),
+			"sha":        ctx.QueueItem.Run.Task.Submission.HeadRef.Sha,
+			"privileged": fmt.Sprintf("%v", ctx.QueueItem.Run.Settings.Privileged),
 		})
 	}
 
