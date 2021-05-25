@@ -178,11 +178,13 @@ func (e *Entrypoint) loop() func(*cli.Context) error {
 
 		e.makeGracefulRestartSignal(lifetimeCancel, log)
 
-		for {
+		for range time.Tick(time.Second) {
 			if err := e.iterate(lifetimeCtx, lifetimeCancel, baseContext, runner); err != nil {
 				return err
 			}
 		}
+
+		return nil
 	}
 }
 
@@ -270,7 +272,6 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 	}
 
 	if e.getTerminate() || !runner.Ready() {
-		time.Sleep(time.Second)
 		return nil
 	}
 
@@ -282,7 +283,6 @@ func (e *Entrypoint) iterate(ctx context.Context, cancel context.CancelFunc, bas
 
 		if stat, ok := status.FromError(err); ok && stat.Code() != codes.NotFound {
 			log.Errorf(ctx, "Error reading from queue: %v", err)
-			time.Sleep(time.Second)
 		}
 
 		select {
