@@ -11,21 +11,13 @@ import (
 	"github.com/tinyci/ci-runners/fw/git"
 )
 
-func jsonIO(from, to interface{}) error {
-	content, err := json.Marshal(from)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(content, to)
-}
-
 // PullRepo retrieves the repository and puts it in the right spot.
 func (r *Run) PullRepo(w io.Writer) (*git.RepoManager, error) {
 	queueTok := r.runCtx.QueueItem.Run.Task.Submission.BaseRef.Repository.Owner.TokenJSON
+
 	tok := &types.OAuthToken{}
 
-	if err := jsonIO(queueTok, tok); err != nil {
+	if err := json.Unmarshal(queueTok, tok); err != nil {
 		return nil, err
 	}
 
