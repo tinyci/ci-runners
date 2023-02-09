@@ -9,7 +9,7 @@ require (
 	github.com/docker/docker v20.10.6+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/fatih/color v1.12.0
-	github.com/gin-gonic/gin v1.7.2 // indirect
+	github.com/gin-gonic/gin v1.7.7 // indirect
 	github.com/go-playground/validator/v10 v10.6.1 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
